@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv API - Tick Data Stream</title>
+    <style>
+
+/* Style for the outer circle */
+.outer-circle {
+    width: 60px;  /* Adjust size as needed */
+    height: 60px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Style for the gap area between outer and inner circles */
+.outer-circle::before {
+    content: '';
+    width: 50px;  /* Adjust size to create the gap */
+    height: 50px;
+    border-radius: 50%;
+    background-color: #eaeced;
+    position: absolute;
+    z-index: 1; /* Ensure it is below the inner circle */
+}
+
+/* Adjust the position of the inner circle within the outer circle */
+.outer-circle .circle {
+    position: relative;
+    z-index: 2; /* Ensure it is above the gap area */
+    background-color: white; /* Set background color for the inner circle */
+}
+
+
+.table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin-left: -7px;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.summary-table th, .summary-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.summary-table th {
+    background-color: #f2f2f2;
+}
+
+
+
+   /* Style for the circle container */
+.circle-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* Create 5 columns */
+    gap: 0px; /* Adjust gap as needed */
+    justify-items: center;
+    margin-top: 2px;
+    width: 250px; /* Adjust width as needed */
+    margin-left: -10px;
+   
+    
+}
+
+/* Style for each circle */
+.circle {
+    width: 40px;  /* Adjust size as needed */
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;  /* Adjust font size as needed */
+    text-align: center;
+}
+
+/* Style for label inside the circle */
+.circle .label {
+    font-size: 12px;  /* Adjust font size as needed */
+}
+
+/* Style for percentage text inside the circle */
+.circle .percentage {
+    font-size: 10px;
+    text-align: center;
+    margin-top: 2px;  /* Adjust spacing as needed */
+}
+
+/* Style for the last digit indicator */
+.last-digit-indicator {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid red;
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+}
+
+/* Highlight for maximum percentage */
+.circle.max-percentage {
+    border-bottom: 5px solid #4bb4b3;
+}
+
+/* Highlight for minimum percentage */
+.circle.min-percentage {
+    border-bottom: 5px solid #ec3f3f;
+   
+   
+    
+    
+}
+
+/* Show last digit indicator */
+.circle.show-indicator .last-digit-indicator {
+    display: block;
+}
+
+
+        body {
+            font-family: Arial, sans-serif;
+           
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            
+        }
+
+        label,
+        button {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+
+        #errorMessages {
+            color: red;
+        }
+
+        table {
+            width: 50%;
+        
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ff0787;
+            padding: 10px;
+            text-align: center;
+            font-size: 15px; 
+           
+        }
+
+        th {
+            background-color: #dbb4b4;
+            
+            
+        }
+        .hidden-column {
+    display: none;
+}
+
+.lastcolumn {
+    width: 100%;  /* Adjust the width as needed */
+}
+
+        .summary {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .summary-table th, .summary-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .summary-table th {
+            background-color: #f2f2f2;
+        }
+        .details-line {
+            border-top: 1px solid #ccc;
+            margin: 8px 0;
+        }
+        #customNotification {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background-color: white;
+    color: black;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    width: 250px;
+}
+
+#customNotification button {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+        
+    </style>
+</head>
+
+<body>
+    <h1>LIVE ANALYSIS</h1>
+    <div class="container">
+       
+
+        <div id="errorMessages"></div>
+
+        <table  id="percentagesTable"  class="hidden-column">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Volatility 10</th>
+                    <th>Volatility 10s</th>
+                    <th>Volatility 25</th>
+                    <th>Volatility 25s</th>
+                    <th>Volatility 50</th>
+                    <th>Volatility 50s</th>
+                    <th>Volatility 75</th>
+                    <th>Volatility 75s</th>
+                    <th>Volatility 100</th>
+                    <th>Volatility 100s</th>
+                   
+                </tr>
+            </thead>
+            <tbody>
+               
+                <tr>
+                    <td>Red Bar</td>
+                    <td id="redBarCell_R_10"></td>
+                    <td id="redBarCell_1HZ10V"></td>
+                    <td id="redBarCell_R_25"></td>
+                    <td id="redBarCell_1HZ25V"></td>
+                    <td id="redBarCell_R_50"></td>
+                    <td id="redBarCell_1HZ50V"></td>
+                    <td id="redBarCell_R_75"></td>
+                    <td id="redBarCell_1HZ75V"></td>
+                    <td id="redBarCell_R_100"></td>
+                    <td id="redBarCell_1HZ100V"></td>
+                   
+                </tr>
+                <tr>
+                    <td>Green Bar</td>
+                    <td id="greenBarCell_R_10"></td>
+                    <td id="greenBarCell_1HZ10V"></td>
+                    <td id="greenBarCell_R_25"></td>
+                    <td id="greenBarCell_1HZ25V"></td>
+                    <td id="greenBarCell_R_50"></td>
+                    <td id="greenBarCell_1HZ50V"></td>
+                    <td id="greenBarCell_R_75"></td>
+                    <td id="greenBarCell_1HZ75V"></td>
+                    <td id="greenBarCell_R_100"></td>
+                    <td id="greenBarCell_1HZ100V"></td>
+                   
+                </tr>
+                <tr>
+                    <td>Number 0</td>
+                    <td id="percent0_R_10">0%</td>
+                    <td id="percent0_1HZ10V">0%</td>
+                    <td id="percent0_R_25">0%</td>
+                    <td id="percent0_1HZ25V">0%</td>
+                    <td id="percent0_R_50">0%</td>
+                    <td id="percent0_1HZ50V">0%</td>
+                    <td id="percent0_R_75">0%</td>
+                    <td id="percent0_1HZ75V">0%</td>
+                    <td id="percent0_R_100">0%</td>
+                    <td id="percent0_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Number 1</td>
+                    <td id="percent1_R_10">0%</td>
+                    <td id="percent1_1HZ10V">0%</td>
+                    <td id="percent1_R_25">0%</td>
+                    <td id="percent1_1HZ25V">0%</td>
+                    <td id="percent1_R_50">0%</td>
+                    <td id="percent1_1HZ50V">0%</td>
+                    <td id="percent1_R_75">0%</td>
+                    <td id="percent1_1HZ75V">0%</td>
+                    <td id="percent1_R_100">0%</td>
+                    <td id="percent1_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Number 2</td>
+                    <td id="percent2_R_10">0%</td>
+                    <td id="percent2_1HZ10V">0%</td>
+                    <td id="percent2_R_25">0%</td>
+                    <td id="percent2_1HZ25V">0%</td>
+                    <td id="percent2_R_50">0%</td>
+                    <td id="percent2_1HZ50V">0%</td>
+                    <td id="percent2_R_75">0%</td>
+                    <td id="percent2_1HZ75V">0%</td>
+                    <td id="percent2_R_100">0%</td>
+                    <td id="percent2_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Number 3</td>
+                    <td id="percent3_R_10">0%</td>
+                    <td id="percent3_1HZ10V">0%</td>
+                    <td id="percent3_R_25">0%</td>
+                    <td id="percent3_1HZ25V">0%</td>
+                    <td id="percent3_R_50">0%</td>
+                    <td id="percent3_1HZ50V">0%</td>
+                    <td id="percent3_R_75">0%</td>
+                    <td id="percent3_1HZ75V">0%</td>
+                    <td id="percent3_R_100">0%</td>
+                    <td id="percent3_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Number 4</td>
+                    <td id="percent4_R_10">0%</td>
+                    <td id="percent4_1HZ10V">0%</td>
+                    <td id="percent4_R_25">0%</td>
+                    <td id="percent4_1HZ25V">0%</td>
+                    <td id="percent4_R_50">0%</td>
+                    <td id="percent4_1HZ50V">0%</td>
+                    <td id="percent4_R_75">0%</td>
+                    <td id="percent4_1HZ75V">0%</td>
+                    <td id="percent4_R_100">0%</td>
+                    <td id="percent4_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Number 5</td>
+                    <td id="percent5_R_10">0%</td>
+                    <td id="percent5_1HZ10V">0%</td>
+                    <td id="percent5_R_25">0%</td>
+                    <td id="percent5_1HZ25V">0%</td>
+                    <td id="percent5_R_50">0%</td>
+                    <td id="percent5_1HZ50V">0%</td>
+                    <td id="percent5_R_75">0%</td>
+                    <td id="percent5_1HZ75V">0%</td>
+                    <td id="percent5_R_100">0%</td>
+                    <td id="percent5_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Number 6</td>
+                    <td id="percent6_R_10">0%</td>
+                    <td id="percent6_1HZ10V">0%</td>
+                    <td id="percent6_R_25">0%</td>
+                    <td id="percent6_1HZ25V">0%</td>
+                    <td id="percent6_R_50">0%</td>
+                    <td id="percent6_1HZ50V">0%</td>
+                    <td id="percent6_R_75">0%</td>
+                    <td id="percent6_1HZ75V">0%</td>
+                    <td id="percent6_R_100">0%</td>
+                    <td id="percent6_1HZ100V">0%</td>
+                  
+                </tr>
+                <tr>
+                    <td>Number 7</td>
+                    <td id="percent7_R_10">0%</td>
+                    <td id="percent7_1HZ10V">0%</td>
+                    <td id="percent7_R_25">0%</td>
+                    <td id="percent7_1HZ25V">0%</td>
+                    <td id="percent7_R_50">0%</td>
+                    <td id="percent7_1HZ50V">0%</td>
+                    <td id="percent7_R_75">0%</td>
+                    <td id="percent7_1HZ75V">0%</td>
+                    <td id="percent7_R_100">0%</td>
+                    <td id="percent7_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Number 8</td>
+                    <td id="percent8_R_10">0%</td>
+                    <td id="percent8_1HZ10V">0%</td>
+                    <td id="percent8_R_25">0%</td>
+                    <td id="percent8_1HZ25V">0%</td>
+                    <td id="percent8_R_50">0%</td>
+                    <td id="percent8_1HZ50V">0%</td>
+                    <td id="percent8_R_75">0%</td>
+                    <td id="percent8_1HZ75V">0%</td>
+                    <td id="percent8_R_100">0%</td>
+                    <td id="percent8_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Number 9</td>
+                    <td id="percent9_R_10">0%</td>
+                    <td id="percent9_1HZ10V">0%</td>
+                    <td id="percent9_R_25">0%</td>
+                    <td id="percent9_1HZ25V">0%</td>
+                    <td id="percent9_R_50">0%</td>
+                    <td id="percent9_1HZ50V">0%</td>
+                    <td id="percent9_R_75">0%</td>
+                    <td id="percent9_1HZ75V">0%</td>
+                    <td id="percent9_R_100">0%</td>
+                    <td id="percent9_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Over 0</td>
+                    <td id="over0_R_10">0%</td>
+                    <td id="over0_1HZ10V">0%</td>
+                    <td id="over0_R_25">0%</td>
+                    <td id="over0_1HZ25V">0%</td>
+                    <td id="over0_R_50">0%</td>
+                    <td id="over0_1HZ50V">0%</td>
+                    <td id="over0_R_75">0%</td>
+                    <td id="over0_1HZ75V">0%</td>
+                    <td id="over0_R_100">0%</td>
+                    <td id="over0_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Over 1</td>
+                    <td id="over1_R_10">0%</td>
+                    <td id="over1_1HZ10V">0%</td>
+                    <td id="over1_R_25">0%</td>
+                    <td id="over1_1HZ25V">0%</td>
+                    <td id="over1_R_50">0%</td>
+                    <td id="over1_1HZ50V">0%</td>
+                    <td id="over1_R_75">0%</td>
+                    <td id="over1_1HZ75V">0%</td>
+                    <td id="over1_R_100">0%</td>
+                    <td id="over1_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Over 2</td>
+                    <td id="over2_R_10">0%</td>
+                    <td id="over2_1HZ10V">0%</td>
+                    <td id="over2_R_25">0%</td>
+                    <td id="over2_1HZ25V">0%</td>
+                    <td id="over2_R_50">0%</td>
+                    <td id="over2_1HZ50V">0%</td>
+                    <td id="over2_R_75">0%</td>
+                    <td id="over2_1HZ75V">0%</td>
+                    <td id="over2_R_100">0%</td>
+                    <td id="over2_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Over 3</td>
+                    <td id="over3_R_10">0%</td>
+                    <td id="over3_1HZ10V">0%</td>
+                    <td id="over3_R_25">0%</td>
+                    <td id="over3_1HZ25V">0%</td>
+                    <td id="over3_R_50">0%</td>
+                    <td id="over3_1HZ50V">0%</td>
+                    <td id="over3_R_75">0%</td>
+                    <td id="over3_1HZ75V">0%</td>
+                    <td id="over3_R_100">0%</td>
+                    <td id="over3_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Over 4</td>
+                    <td id="over4_R_10">0%</td>
+                    <td id="over4_1HZ10V">0%</td>
+                    <td id="over4_R_25">0%</td>
+                    <td id="over4_1HZ25V">0%</td>
+                    <td id="over4_R_50">0%</td>
+                    <td id="over4_1HZ50V">0%</td>
+                    <td id="over4_R_75">0%</td>
+                    <td id="over4_1HZ75V">0%</td>
+                    <td id="over4_R_100">0%</td>
+                    <td id="over4_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Over 5</td>
+                    <td id="over5_R_10">0%</td>
+                    <td id="over5_1HZ10V">0%</td>
+                    <td id="over5_R_25">0%</td>
+                    <td id="over5_1HZ25V">0%</td>
+                    <td id="over5_R_50">0%</td>
+                    <td id="over5_1HZ50V">0%</td>
+                    <td id="over5_R_75">0%</td>
+                    <td id="over5_1HZ75V">0%</td>
+                    <td id="over5_R_100">0%</td>
+                    <td id="over5_1HZ100V">0%</td>
+                  
+                </tr>
+                <tr>
+                    <td>Over 6</td>
+                    <td id="over6_R_10">0%</td>
+                    <td id="over6_1HZ10V">0%</td>
+                    <td id="over6_R_25">0%</td>
+                    <td id="over6_1HZ25V">0%</td>
+                    <td id="over6_R_50">0%</td>
+                    <td id="over6_1HZ50V">0%</td>
+                    <td id="over6_R_75">0%</td>
+                    <td id="over6_1HZ75V">0%</td>
+                    <td id="over6_R_100">0%</td>
+                    <td id="over6_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Over 7</td>
+                    <td id="over7_R_10">0%</td>
+                    <td id="over7_1HZ10V">0%</td>
+                    <td id="over7_R_25">0%</td>
+                    <td id="over7_1HZ25V">0%</td>
+                    <td id="over7_R_50">0%</td>
+                    <td id="over7_1HZ50V">0%</td>
+                    <td id="over7_R_75">0%</td>
+                    <td id="over7_1HZ75V">0%</td>
+                    <td id="over7_R_100">0%</td>
+                    <td id="over7_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Over 8</td>
+                    <td id="over8_R_10">0%</td>
+                    <td id="over8_1HZ10V">0%</td>
+                    <td id="over8_R_25">0%</td>
+                    <td id="over8_1HZ25V">0%</td>
+                    <td id="over8_R_50">0%</td>
+                    <td id="over8_1HZ50V">0%</td>
+                    <td id="over8_R_75">0%</td>
+                    <td id="over8_1HZ75V">0%</td>
+                    <td id="over8_R_100">0%</td>
+                    <td id="over8_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 1</td>
+                    <td id="under1_R_10">0%</td>
+                    <td id="under1_1HZ10V">0%</td>
+                    <td id="under1_R_25">0%</td>
+                    <td id="under1_1HZ25V">0%</td>
+                    <td id="under1_R_50">0%</td>
+                    <td id="under1_1HZ50V">0%</td>
+                    <td id="under1_R_75">0%</td>
+                    <td id="under1_1HZ75V">0%</td>
+                    <td id="under1_R_100">0%</td>
+                    <td id="under1_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 2</td>
+                    <td id="under2_R_10">0%</td>
+                    <td id="under2_1HZ10V">0%</td>
+                    <td id="under2_R_25">0%</td>
+                    <td id="under2_1HZ25V">0%</td>
+                    <td id="under2_R_50">0%</td>
+                    <td id="under2_1HZ50V">0%</td>
+                    <td id="under2_R_75">0%</td>
+                    <td id="under2_1HZ75V">0%</td>
+                    <td id="under2_R_100">0%</td>
+                    <td id="under2_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 3</td>
+                    <td id="under3_R_10">0%</td>
+                    <td id="under3_1HZ10V">0%</td>
+                    <td id="under3_R_25">0%</td>
+                    <td id="under3_1HZ25V">0%</td>
+                    <td id="under3_R_50">0%</td>
+                    <td id="under3_1HZ50V">0%</td>
+                    <td id="under3_R_75">0%</td>
+                    <td id="under3_1HZ75V">0%</td>
+                    <td id="under3_R_100">0%</td>
+                    <td id="under3_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 4</td>
+                    <td id="under4_R_10">0%</td>
+                    <td id="under4_1HZ10V">0%</td>
+                    <td id="under4_R_25">0%</td>
+                    <td id="under4_1HZ25V">0%</td>
+                    <td id="under4_R_50">0%</td>
+                    <td id="under4_1HZ50V">0%</td>
+                    <td id="under4_R_75">0%</td>
+                    <td id="under4_1HZ75V">0%</td>
+                    <td id="under4_R_100">0%</td>
+                    <td id="under4_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 5</td>
+                    <td id="under5_R_10">0%</td>
+                    <td id="under5_1HZ10V">0%</td>
+                    <td id="under5_R_25">0%</td>
+                    <td id="under5_1HZ25V">0%</td>
+                    <td id="under5_R_50">0%</td>
+                    <td id="under5_1HZ50V">0%</td>
+                    <td id="under5_R_75">0%</td>
+                    <td id="under5_1HZ75V">0%</td>
+                    <td id="under5_R_100">0%</td>
+                    <td id="under5_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 6</td>
+                    <td id="under6_R_10">0%</td>
+                    <td id="under6_1HZ10V">0%</td>
+                    <td id="under6_R_25">0%</td>
+                    <td id="under6_1HZ25V">0%</td>
+                    <td id="under6_R_50">0%</td>
+                    <td id="under6_1HZ50V">0%</td>
+                    <td id="under6_R_75">0%</td>
+                    <td id="under6_1HZ75V">0%</td>
+                    <td id="under6_R_100">0%</td>
+                    <td id="under6_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 7</td>
+                    <td id="under7_R_10">0%</td>
+                    <td id="under7_1HZ10V">0%</td>
+                    <td id="under7_R_25">0%</td>
+                    <td id="under7_1HZ25V">0%</td>
+                    <td id="under7_R_50">0%</td>
+                    <td id="under7_1HZ50V">0%</td>
+                    <td id="under7_R_75">0%</td>
+                    <td id="under7_1HZ75V">0%</td>
+                    <td id="under7_R_100">0%</td>
+                    <td id="under7_1HZ100V">0%</td>
+                  
+                </tr>
+                <tr>
+                    <td>Under 8</td>
+                    <td id="under8_R_10">0%</td>
+                    <td id="under8_1HZ10V">0%</td>
+                    <td id="under8_R_25">0%</td>
+                    <td id="under8_1HZ25V">0%</td>
+                    <td id="under8_R_50">0%</td>
+                    <td id="under8_1HZ50V">0%</td>
+                    <td id="under8_R_75">0%</td>
+                    <td id="under8_1HZ75V">0%</td>
+                    <td id="under8_R_100">0%</td>
+                    <td id="under8_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Under 9</td>
+                    <td id="under9_R_10">0%</td>
+                    <td id="under9_1HZ10V">0%</td>
+                    <td id="under9_R_25">0%</td>
+                    <td id="under9_1HZ25V">0%</td>
+                    <td id="under9_R_50">0%</td>
+                    <td id="under9_1HZ50V">0%</td>
+                    <td id="under9_R_75">0%</td>
+                    <td id="under9_1HZ75V">0%</td>
+                    <td id="under9_R_100">0%</td>
+                    <td id="under9_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Even</td>
+                    <td id="evenCell_R_10">0%</td>
+                    <td id="evenCell_1HZ10V">0%</td>
+                    <td id="evenCell_R_25">0%</td>
+                    <td id="evenCell_1HZ25V">0%</td>
+                    <td id="evenCell_R_50">0%</td>
+                    <td id="evenCell_1HZ50V">0%</td>
+                    <td id="evenCell_R_75">0%</td>
+                    <td id="evenCell_1HZ75V">0%</td>
+                    <td id="evenCell_R_100">0%</td>
+                    <td id="evenCell_1HZ100V">0%</td>
+                    
+                </tr>
+                <tr>
+                    <td>Odd</td>
+                    <td id="oddCell_R_10">0%</td>
+                    <td id="oddCell_1HZ10V">0%</td>
+                    <td id="oddCell_R_25">0%</td>
+                    <td id="oddCell_1HZ25V">0%</td>
+                    <td id="oddCell_R_50">0%</td>
+                    <td id="oddCell_1HZ50V">0%</td>
+                    <td id="oddCell_R_75">0%</td>
+                    <td id="oddCell_1HZ75V">0%</td>
+                    <td id="oddCell_R_100">0%</td>
+                    <td id="oddCell_1HZ100V">0%</td>
+                  
+                </tr>
+                <tr>
+                    <td>Rise</td>
+                    <td id="riseCell_R_10">0%</td>
+                    <td id="riseCell_1HZ10V">0%</td>
+                    <td id="riseCell_R_25">0%</td>
+                    <td id="riseCell_1HZ25V">0%</td>
+                    <td id="riseCell_R_50">0%</td>
+                    <td id="riseCell_1HZ50V">0%</td>
+                    <td id="riseCell_R_75">0%</td>
+                    <td id="riseCell_1HZ75V">0%</td>
+                    <td id="riseCell_R_100">0%</td>
+                    <td id="riseCell_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Fall</td>
+                    <td id="fallCell_R_10">0%</td>
+                    <td id="fallCell_1HZ10V">0%</td>
+                    <td id="fallCell_R_25">0%</td>
+                    <td id="fallCell_1HZ25V">0%</td>
+                    <td id="fallCell_R_50">0%</td>
+                    <td id="fallCell_1HZ50V">0%</td>
+                    <td id="fallCell_R_75">0%</td>
+                    <td id="fallCell_1HZ75V">0%</td>
+                    <td id="fallCell_R_100">0%</td>
+                    <td id="fallCell_1HZ100V">0%</td>
+                   
+                </tr>
+                <tr>
+                    <td>Candle Color</td>
+                    <td id="candleColorCell_R_10">N/A</td>
+                    <td id="candleColorCell_1HZ10V">N/A</td>
+                    <td id="candleColorCell_R_25">N/A</td>
+                    <td id="candleColorCell_1HZ25V">N/A</td>
+                    <td id="candleColorCell_R_50">N/A</td>
+                    <td id="candleColorCell_1HZ50V">N/A</td>
+                    <td id="candleColorCell_R_75">N/A</td>
+                    <td id="candleColorCell_1HZ75V">N/A</td>
+                    <td id="candleColorCell_R_100">N/A</td>
+                    <td id="candleColorCell_1HZ100V">N/A</td>
+                    
+                </tr>
+            </tbody>
+        </table>
+
+
+        <div class="hidden-column">
+            <label for="marketSelect">Market Type:</label>
+            <select id="marketSelect">
+                <option value="R_10">Volatility 10</option>
+                <option value="1HZ10V">Volatility 10s</option>
+                <option value="R_25">Volatility 25</option>
+                <option value="1HZ25V">Volatility 25s</option>
+                <option value="R_50">Volatility 50</option>
+                <option value="1HZ50V">Volatility 50s</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="1HZ75V">Volatility 75s</option>
+                <option value="R_100">Volatility 100</option>
+                <option value="1HZ100V">Volatility 100s</option>
+            </select>
+        
+            <label for="metricSelect">Metric:</label>
+            <select id="metricSelect">
+                <option value="redBarCell">Red Bar</option>
+                <option value="greenBarCell">Green Bar</option>
+                <option value="percent0">Number 0</option>
+                <option value="percent1">Number 1</option>
+                <option value="percent2">Number 2</option>
+                <option value="percent3">Number 3</option>
+                <option value="percent4">Number 4</option>
+                <option value="percent5">Number 5</option>
+                <option value="percent6">Number 6</option>
+                <option value="percent7">Number 7</option>
+                <option value="percent8">Number 8</option>
+                <option value="percent9">Number 9</option>
+                <option value="over0">Over 0</option>
+                <option value="over1">Over 1</option>
+                <option value="over2">Over 2</option>
+                <option value="over3">Over 3</option>
+                <option value="over4">Over 4</option>
+                <option value="over5">Over 5</option>
+                <option value="over6">Over 6</option>
+                <option value="over7">Over 7</option>
+                <option value="over8">Over 8</option>
+                <option value="under1">Under 1</option>
+                <option value="under2">Under 2</option>
+                <option value="under3">Under 3</option>
+                <option value="under4">Under 4</option>
+                <option value="under5">Under 5</option>
+                <option value="under6">Under 6</option>
+                <option value="under7">Under 7</option>
+                <option value="under8">Under 8</option>
+                <option value="under9">Under 9</option>
+                <option value="evenCell">Even</option>
+                <option value="oddCell">Odd</option>
+                <option value="riseCell">Rise</option>
+                <option value="fallCell">Fall</option>
+            </select>
+        
+            <button id="searchButton">Search</button>
+        </div>
+        
+        <div id="result" class="hidden-column">
+            <h3>Result:</h3>
+            <p id="percentageResult">0%</p>
+        </div>
+        
+       
+        
+
+        <h1>Active Notifiers</h1>
+ 
+            <div id="summaryContainer" class="table-container">
+                <!-- Table content will be inserted here -->
+            </div>
+            <div id="activeNotifiers"></div>
+        
+        
+    
+    
+
+    </div>
+
+    <script type="module">
+      import DerivAPIBasic from 'https://cdn.skypack.dev/@deriv/deriv-api/dist/DerivAPIBasic';
+
+const app_id = 1089;
+const connection = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${app_id}`);
+const api = new DerivAPIBasic({ connection });
+
+const markets = [
+    'R_10', '1HZ10V', 'R_25', '1HZ25V', 'R_50', '1HZ50V',
+    'R_75', '1HZ75V', 'R_100', '1HZ100V', 'RDBEAR', 'RDBULL',
+    'JD10', 'JD25', 'JD50', 'JD75', 'JD100'
+];
+
+let ticksData = {};
+let requestId = {};
+let subscriptionActive = false;
+
+const errorMessages = document.getElementById('errorMessages');
+
+
+function generateTickRequest(symbol) {
+    return {
+        ticks_history: symbol,
+        count: 1000,
+        adjust_start_time: 1,
+        start: 1,
+        end: 'latest',
+        style: 'ticks',
+        subscribe: 1
+    };
+}
+
+async function fetchCandleColor(symbol) {
+    const request = {
+        ticks_history: symbol,
+        adjust_start_time: 1,
+        start: 1,
+        end: 'latest',
+        style: 'candles',
+        subscribe: 1,
+        granularity: 60 // 1-minute time frame
+    };
+
+    const candleResponse = (res) => {
+        const data = JSON.parse(res.data);
+        if (data.msg_type === 'candles' || data.msg_type === 'ohlc') {
+            const latestCandle = data.candles ? data.candles[data.candles.length - 1] : data.ohlc;
+            const candleColor = latestCandle.open < latestCandle.close ? 'Green' : 'Red';
+            document.getElementById(`candleColorCell_${symbol}`).textContent = candleColor;
+            document.getElementById(`candleColorCell_${symbol}`).style.color = candleColor.toLowerCase();
+        }
+    };
+
+    const connectionEventHandler = (res) => {
+        if (JSON.parse(res.data).echo_req.ticks_history === symbol) {
+            candleResponse(res);
+        }
+    };
+
+    connection.addEventListener('message', connectionEventHandler);
+    await api.subscribe(request);
+}
+function calculatePercentages(ticks) {
+    const digitCount = Array(10).fill(0);
+    ticks.forEach(tick => {
+        const lastDigit = tick.charAt(tick.length - 1);
+        digitCount[parseInt(lastDigit)]++;
+    });
+    const totalTicks = ticks.length;
+    return digitCount.map(count => ((count / totalTicks) * 100).toFixed(1));
+}
+
+
+
+
+
+
+function updatePercentagesTable(symbol, percentages) {
+    percentages.forEach((percentage, index) => {
+        const cellId = `percent${index}_${symbol}`;
+        document.getElementById(cellId).innerText = `${percentage}%`;
+    });
+    compareDetailAndPercentage(); // Call the comparison function here
+}
+
+
+function calculateOverUnder(digitCount, totalTicks) {
+    const overPercentages = [];
+    const underPercentages = [];
+
+    for (let i = 0; i <= 8; i++) {
+        const overCount = digitCount.slice(i + 1).reduce((acc, count) => acc + count, 0);
+        overPercentages.push(((overCount / totalTicks) * 100).toFixed(1));
+    }
+
+    for (let i = 1; i <= 9; i++) {
+        const underCount = digitCount.slice(0, i).reduce((acc, count) => acc + count, 0);
+        underPercentages.push(((underCount / totalTicks) * 100).toFixed(1));
+    }
+
+    return { overPercentages, underPercentages };
+}
+
+function updateOverUnderTable(symbol, overPercentages, underPercentages) {
+    overPercentages.forEach((percentage, index) => {
+        document.getElementById(`over${index}_${symbol}`).innerText = `${percentage}%`;
+    });
+
+    underPercentages.forEach((percentage, index) => {
+        document.getElementById(`under${index + 1}_${symbol}`).innerText = `${percentage}%`;
+    });
+}
+
+function calculateRiseFall(ticks) {
+    let riseCount = 0;
+    let fallCount = 0;
+
+    for (let i = 1; i < ticks.length; i++) {
+        if (parseFloat(ticks[i]) > parseFloat(ticks[i - 1])) {
+            riseCount++;
+        } else if (parseFloat(ticks[i]) < parseFloat(ticks[i - 1])) {
+            fallCount++;
+        }
+    }
+
+    const total = riseCount + fallCount;
+    const risePercentage = total === 0 ? 0 : ((riseCount / total) * 100).toFixed(1);
+    const fallPercentage = total === 0 ? 0 : ((fallCount / total) * 100).toFixed(1);
+
+    return { risePercentage, fallPercentage };
+}
+
+function calculateEvenOdd(digitCount) {
+    const evenCount = digitCount.filter((count, index) => index % 2 === 0).reduce((acc, count) => acc + count, 0);
+    const oddCount = digitCount.filter((count, index) => index % 2 !== 0).reduce((acc, count) => acc + count, 0);
+
+    const total = evenCount + oddCount;
+    const evenPercentage = total === 0 ? 0 : ((evenCount / total) * 100).toFixed(1);
+    const oddPercentage = total === 0 ? 0 : ((oddCount / total) * 100).toFixed(1);
+
+    return { evenPercentage, oddPercentage };
+}
+
+function updateSummaryTable(symbol, risePercentage, fallPercentage, evenPercentage, oddPercentage) {
+    document.getElementById(`riseCell_${symbol}`).innerText = `${risePercentage}%`;
+    document.getElementById(`fallCell_${symbol}`).innerText = `${fallPercentage}%`;
+    document.getElementById(`evenCell_${symbol}`).innerText = `${evenPercentage}%`;
+    document.getElementById(`oddCell_${symbol}`).innerText = `${oddPercentage}%`;
+}
+
+function updateRedGreenBar(symbol, digitCount, totalTicks) {
+    let maxPercentage = -Infinity;
+    let minPercentage = Infinity;
+    let maxIndexes = [];
+    let minIndexes = [];
+
+    for (let i = 0; i < 10; i++) {
+        const percentage = ((digitCount[i] / totalTicks) * 100).toFixed(1);
+
+        if (parseFloat(percentage) > maxPercentage) {
+            maxPercentage = parseFloat(percentage);
+            maxIndexes = [i];
+        } else if (parseFloat(percentage) === maxPercentage) {
+            maxIndexes.push(i);
+        }
+
+        if (parseFloat(percentage) < minPercentage) {
+            minPercentage = parseFloat(percentage);
+            minIndexes = [i];
+        } else if (parseFloat(percentage) === minPercentage) {
+            minIndexes.push(i);
+        }
+    }
+
+    document.getElementById(`redBarCell_${symbol}`).innerText = minIndexes.join(', ');
+    document.getElementById(`greenBarCell_${symbol}`).innerText = maxIndexes.join(', ');
+}
+
+async function stopTickStream() {
+    connection.removeEventListener('message', ticksResponse);
+
+    if (subscriptionActive) {
+        for (let symbol of markets) {
+            if (requestId[symbol]) {
+                await api.forget(requestId[symbol]);
+                requestId[symbol] = null;
+            }
+        }
+        subscriptionActive = false;
+
+       
+    }
+}
+
+
+async function getTickStream() {
+    await stopTickStream();
+
+    try {
+        for (let symbol of markets) {
+            const requestObject = generateTickRequest(symbol);
+            requestId[symbol] = requestObject.ticks_history;
+
+            await api.subscribe(requestObject);
+            connection.addEventListener('message', ticksResponse);
+
+            fetchCandleColor(symbol);
+        }
+
+        subscriptionActive = true;
+       
+    } catch (error) {
+        errorMessages.innerHTML = `<p class="text-danger">Error: ${error.message}</p>`;
+        console.error(`Failed to start tick stream: ${error.message}`);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Request notification permission
+    if (Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+            if (permission !== "granted") {
+                alert("You won't receive notifications for active notifiers.");
+            }
+        });
+    }
+
+    getTickStream();
+    updateActiveNotifiers();
+    compareDetailAndPercentage();
+});
+
+
+function updateActiveNotifiers() {
+    const activeNotifiersContainer = document.getElementById('activeNotifiers');
+    const summaryContainer = document.getElementById('summaryContainer');
+    activeNotifiersContainer.innerHTML = '';
+    summaryContainer.innerHTML = '';
+    const summaryDataArray = JSON.parse(localStorage.getItem('summaryArray')) || [];
+
+    let summaryTableHTML = `
+    <table class="summary-table">
+       
+        </thead>
+        <tbody>
+`;
+
+summaryDataArray.forEach((summaryData, index) => {
+    const keysToCheck = [
+        'redBarInput', 'greenBarInput', 'zeroInput', 'oneInput', 'twoInput', 'threeInput', 'fourInput', 'fiveInput',
+        'sixInput', 'sevenInput', 'eightInput', 'nineInput', 'overInput', 'underInput', 'evenInput', 'oddInput',
+        'riseInput', 'fallInput', 'candleColor'
+    ];
+    const keyLabels = {
+        redBarInput: 'Red Bar',
+        greenBarInput: 'Green Bar',
+        zeroInput: 'Number 0',
+        oneInput: 'Number 1',
+        twoInput: 'Number 2',
+        threeInput: 'Number 3',
+        fourInput: 'Number 4',
+        fiveInput: 'Number 5',
+        sixInput: 'Number 6',
+        sevenInput: 'Number 7',
+        eightInput: 'Number 8',
+        nineInput: 'Number 9',
+        overInput: 'Over',
+        underInput: 'Under',
+        evenInput: 'Even',
+        oddInput: 'Odd',
+        riseInput: 'Rise',
+        fallInput: 'Fall',
+        candleColor: 'Candle Color'
+    };
+
+    const details = keysToCheck.filter(key => summaryData[key] && !summaryData[key].toLowerCase().includes('default'));
+
+    if (details.length > 0) {
+        details.forEach((key, idx) => {
+            const rowId = `row_${index}_${idx}`;
+            summaryTableHTML += `
+                <tr id="${rowId}">
+                    ${idx === 0 ? `<td rowspan="${details.length}"><b>Strategy Name: </b>${summaryData.strategyName}
+                        <b><br><hr>Market type: </b>${summaryData.marketSelect}<br><hr><b> Explanation: </b>${summaryData.explanation}</td>
+                   
+                    ` : ''}
+                    <td><b>Key:</b><br> ${keyLabels[key]}</td>
+                    <td><b>Value: </b><br> ${summaryData[key]}</td>
+                    <td class="hidden-column">
+                        <select id="marketSelect_${rowId}">
+                            <option value="R_10">Volatility 10</option>
+                            <option value="1HZ10V">Volatility 10s</option>
+                            <option value="R_25">Volatility 25</option>
+                            <option value="1HZ25V">Volatility 25s</option>
+                            <option value="R_50">Volatility 50</option>
+                            <option value="1HZ50V">Volatility 50s</option>
+                            <option value="R_75">Volatility 75</option>
+                            <option value="1HZ75V">Volatility 75s</option>
+                            <option value="R_100">Volatility 100</option>
+                            <option value="1HZ100V">Volatility 100s</option>
+                        </select>
+                    </td>
+                    <td class="hidden-column">
+                        <select id="metricSelect_${rowId}">
+                            <option value="redBarCell">Red Bar</option>
+                            <option value="greenBarCell">Green Bar</option>
+                            <option value="percent0">Number 0</option>
+                            <option value="percent1">Number 1</option>
+                            <option value="percent2">Number 2</option>
+                            <option value="percent3">Number 3</option>
+                            <option value="percent4">Number 4</option>
+                            <option value="percent5">Number 5</option>
+                            <option value="percent6">Number 6</option>
+                            <option value="percent7">Number 7</option>
+                            <option value="percent8">Number 8</option>
+                            <option value="percent9">Number 9</option>
+                            <option value="over0">Over 0</option>
+                            <option value="over1">Over 1</option>
+                            <option value="over2">Over 2</option>
+                            <option value="over3">Over 3</option>
+                            <option value="over4">Over 4</option>
+                            <option value="over5">Over 5</option>
+                            <option value="over6">Over 6</option>
+                            <option value="over7">Over 7</option>
+                            <option value="over8">Over 8</option>
+                            <option value="under1">Under 1</option>
+                            <option value="under2">Under 2</option>
+                            <option value="under3">Under 3</option>
+                            <option value="under4">Under 4</option>
+                            <option value="under5">Under 5</option>
+                            <option value="under6">Under 6</option>
+                            <option value="under7">Under 7</option>
+                            <option value="under8">Under 8</option>
+                            <option value="under9">Under 9</option>
+                            <option value="evenCell">Even</option>
+                            <option value="oddCell">Odd</option>
+                            <option value="riseCell">Rise</option>
+                            <option value="fallCell">Fall</option>
+                        </select>
+                    </td>
+                    <td class="lastcolumn">
+                        <span id="percentageResult_${rowId}">0%</span>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+});
+
+summaryTableHTML += `
+        </tbody>
+    </table>
+`;
+
+summaryContainer.innerHTML = summaryTableHTML;
+
+
+
+    // Set dropdown values after the table is rendered
+// Set dropdown values after the table is rendered
+summaryDataArray.forEach((summaryData, index) => {
+    const keysToCheck = [
+        'redBarInput', 'greenBarInput', 'zeroInput', 'oneInput', 'twoInput', 'threeInput', 'fourInput', 'fiveInput',
+        'sixInput', 'sevenInput', 'eightInput', 'nineInput', 'overInput', 'underInput', 'evenInput', 'oddInput',
+        'riseInput', 'fallInput', 'candleColor'
+    ];
+
+    const details = keysToCheck.filter(key => summaryData[key] && !summaryData[key].toLowerCase().includes('default'));
+
+    details.forEach((key, idx) => {
+        const rowId = `row_${index}_${idx}`;
+        const marketSelect = document.getElementById(`marketSelect_${rowId}`);
+        const metricSelect = document.getElementById(`metricSelect_${rowId}`);
+        const percentageResult = document.getElementById(`percentageResult_${rowId}`);
+
+        // Set the selected value for marketSelect based on keyword matching
+        if (summaryData.marketSelect.includes('10s')) {
+            marketSelect.value = '1HZ10V';
+        } else if (summaryData.marketSelect.includes('25s')) {
+            marketSelect.value = '1HZ25V';
+        } else if (summaryData.marketSelect.includes('50s')) {
+            marketSelect.value = '1HZ50V';
+        } else if (summaryData.marketSelect.includes('75s')) {
+            marketSelect.value = '1HZ75V';
+        } else if (summaryData.marketSelect.includes('100s')) {
+            marketSelect.value = '1HZ100V';
+        } else if (summaryData.marketSelect.includes('10')) {
+            marketSelect.value = 'R_10';
+        } else if (summaryData.marketSelect.includes('25')) {
+            marketSelect.value = 'R_25';
+        } else if (summaryData.marketSelect.includes('50')) {
+            marketSelect.value = 'R_50';
+        } else if (summaryData.marketSelect.includes('75')) {
+            marketSelect.value = 'R_75';
+        } else if (summaryData.marketSelect.includes('100')) {
+            marketSelect.value = 'R_100';
+        }
+
+        // Set the selected value for metricSelect
+        if (key === 'redBarInput') {
+            metricSelect.value = 'redBarCell';
+        } else if (key === 'greenBarInput') {
+            metricSelect.value = 'greenBarCell';
+        } else if (key === 'zeroInput') {
+            metricSelect.value = 'percent0';
+        } else if (key === 'oneInput') {
+            metricSelect.value = 'percent1';
+        } else if (key === 'twoInput') {
+            metricSelect.value = 'percent2';
+        } else if (key === 'threeInput') {
+            metricSelect.value = 'percent3';
+        } else if (key === 'fourInput') {
+            metricSelect.value = 'percent4';
+        } else if (key === 'fiveInput') {
+            metricSelect.value = 'percent5';
+        } else if (key === 'sixInput') {
+            metricSelect.value = 'percent6';
+        } else if (key === 'sevenInput') {
+            metricSelect.value = 'percent7';
+        } else if (key === 'eightInput') {
+            metricSelect.value = 'percent8';
+        } else if (key === 'nineInput') {
+            metricSelect.value = 'percent9';
+        } else if (key === 'overInput') {
+            metricSelect.value = 'over' + summaryData[key].replace(/\D/g, '');
+        } else if (key === 'underInput') {
+            metricSelect.value = 'under' + summaryData[key].replace(/\D/g, '');
+        } else if (key === 'evenInput') {
+            metricSelect.value = 'evenCell';
+        } else if (key === 'oddInput') {
+            metricSelect.value = 'oddCell';
+        } else if (key === 'riseInput') {
+            metricSelect.value = 'riseCell';
+        } else if (key === 'fallInput') {
+            metricSelect.value = 'fallCell';
+        }
+
+        // Automatically update percentages
+        const cellId = `${metricSelect.value}_${marketSelect.value}`;
+        const percentageCell = document.getElementById(cellId);
+
+        if (percentageCell) {
+            const percentage = percentageCell.innerText;
+            percentageResult.innerText = percentage;
+
+            // Create a MutationObserver to watch for changes in the cell
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        percentageResult.innerText = percentageCell.innerText;
+                    }
+                });
+            });
+
+            // Configure the observer to watch for childList changes
+            const config = { childList: true };
+            observer.observe(percentageCell, config);
+        } else {
+            percentageResult.innerText = 'N/A';
+        }
+    });
+});
+
+
+    // Add event listeners for search buttons
+    summaryDataArray.forEach((summaryData, index) => {
+        const keysToCheck = [
+            'redBarInput', 'greenBarInput', 'zeroInput', 'oneInput', 'twoInput', 'threeInput', 'fourInput', 'fiveInput',
+            'sixInput', 'sevenInput', 'eightInput', 'nineInput', 'overInput', 'underInput', 'evenInput', 'oddInput',
+            'riseInput', 'fallInput', 'candleColor'
+        ];
+
+        const details = keysToCheck.filter(key => summaryData[key] && !summaryData[key].toLowerCase().includes('default'));
+
+        details.forEach((key, idx) => {
+            const rowId = `row_${index}_${idx}`;
+            document.getElementById(`searchButton_${rowId}`).addEventListener('click', function() {
+                const marketSelect = document.getElementById(`marketSelect_${rowId}`).value;
+                const metricSelect = document.getElementById(`metricSelect_${rowId}`).value;
+
+                const cellId = `${metricSelect}_${marketSelect}`;
+                const percentageCell = document.getElementById(cellId);
+
+                const percentageResult = document.getElementById(`percentageResult_${rowId}`);
+
+                if (percentageCell) {
+                    const percentage = percentageCell.innerText;
+                    percentageResult.innerText = percentage;
+
+                    // Create a MutationObserver to watch for changes in the cell
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'childList') {
+                                percentageResult.innerText = percentageCell.innerText;
+                            }
+                        });
+                    });
+
+                    // Configure the observer to watch for childList changes
+                    const config = { childList: true };
+                    observer.observe(percentageCell, config);
+                } else {
+                    percentageResult.innerText = 'N/A';
+                }
+            });
+        });
+    });
+}
+
+
+
+const notifiedRows = new Set();
+
+function updateRowColorStatus() {
+    const summaryDataArray = JSON.parse(localStorage.getItem('summaryArray')) || [];
+
+    summaryDataArray.forEach((summaryData, index) => {
+        const keysToCheck = [
+            'redBarInput', 'greenBarInput', 'zeroInput', 'oneInput', 'twoInput', 'threeInput', 'fourInput', 'fiveInput',
+            'sixInput', 'sevenInput', 'eightInput', 'nineInput', 'overInput', 'underInput', 'evenInput', 'oddInput',
+            'riseInput', 'fallInput', 'candleColor'
+        ];
+
+        const details = keysToCheck.filter(key => summaryData[key] && !summaryData[key].toLowerCase().includes('default'));
+
+        let allGreen = true;
+        details.forEach((key, idx) => {
+            const rowId = `row_${index}_${idx}`;
+            const percentageCell = document.getElementById(`percentageResult_${rowId}`).parentElement;
+            if (percentageCell && percentageCell.style.backgroundColor !== 'green') {
+                allGreen = false;
+            }
+        });
+
+        // Update the entire row color based on allGreen status
+        details.forEach((key, idx) => {
+            const rowId = `row_${index}_${idx}`;
+            const rowElement = document.getElementById(rowId);
+            if (rowElement) {
+                if (allGreen) {
+                    rowElement.style.backgroundColor = 'green';
+                    if (!notifiedRows.has(rowId)) {
+                        console.log(`Row ${rowId} turned green for strategy: ${summaryData.strategyName}, market: ${summaryData.marketSelect}`);
+                        const strategyName = summaryData.strategyName;
+                        const marketType = summaryData.marketSelect;
+
+                        // Send notification if permission is granted
+                        if (Notification.permission === "granted") {
+                            new Notification('Active Notifier', {
+                                body: `Strategy: ${strategyName}\nMarket Type: ${marketType}`
+                            });
+                        }
+
+                        // Add the row to the set of notified rows
+                        notifiedRows.add(rowId);
+                    }
+                } else {
+                    rowElement.style.backgroundColor = '';
+                    // Remove the row from the set of notified rows
+                    notifiedRows.delete(rowId);
+                }
+            }
+        });
+    });
+}
+
+
+
+// Call the function in compareDetailAndPercentage to update row colors
+function compareDetailAndPercentage() {
+    const summaryDataArray = JSON.parse(localStorage.getItem('summaryArray')) || [];
+
+    summaryDataArray.forEach((summaryData, index) => {
+        const keysToCheck = [
+            'redBarInput', 'greenBarInput', 'zeroInput', 'oneInput', 'twoInput', 'threeInput', 'fourInput', 'fiveInput',
+            'sixInput', 'sevenInput', 'eightInput', 'nineInput', 'overInput', 'underInput', 'evenInput', 'oddInput',
+            'riseInput', 'fallInput', 'candleColor'
+        ];
+
+        const details = keysToCheck.filter(key => summaryData[key] && !summaryData[key].toLowerCase().includes('default'));
+
+        details.forEach((key, idx) => {
+            const rowId = `row_${index}_${idx}`;
+            const detailValue = summaryData[key];
+            const percentageCell = document.getElementById(`percentageResult_${rowId}`).parentElement;
+
+            if (percentageCell) {
+                const percentageText = percentageCell.innerText.trim();
+                const percentages = percentageText.split(',').map(p => Number(p.trim().replace('%', '')));
+
+                if (detailValue.includes('Fixed :')) {
+                    const fixedValue = parseFloat(detailValue.split(':')[1].trim());
+                    // Ensure there's only one percentage and it matches the fixed value
+                    if (percentages.length === 1 && percentages[0] === fixedValue) {
+                        percentageCell.style.backgroundColor = 'green';
+                    } else {
+                        percentageCell.style.backgroundColor = 'grey';
+                    }
+                }  else if (detailValue.includes('Range:')) {
+                    const [minValue, maxValue] = detailValue.split(':')[1].split('-').map(v => parseFloat(v.trim()));
+                    if (percentages.every(percentage => percentage >= minValue && percentage <= maxValue)) {
+                        percentageCell.style.backgroundColor = 'green';
+                    } else {
+                        percentageCell.style.backgroundColor = 'grey';
+                    }
+                } else if (detailValue.toLowerCase().includes('even')) {
+                    const isAllEven = percentages.every(percentage => percentage % 2 === 0);
+                    if (isAllEven) {
+                        percentageCell.style.backgroundColor = 'green';
+                    } else {
+                        percentageCell.style.backgroundColor = 'grey';
+                    }
+                } else if (detailValue.toLowerCase().includes('odd')) {
+                    const isAllOdd = percentages.every(percentage => percentage % 2 !== 0);
+                    if (isAllOdd) {
+                        percentageCell.style.backgroundColor = 'green';
+                    } else {
+                        percentageCell.style.backgroundColor = 'grey';
+                    }
+                } else {
+                    percentageCell.style.backgroundColor = 'grey';
+                }
+            }
+        });
+    });
+
+    // Update row color status after updating individual cells
+    updateRowColorStatus();
+}
+
+function createCircleRow(symbol) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 6; // Adjust according to the number of columns in your table
+    const circleContainer = document.createElement('div');
+    circleContainer.className = 'circle-container';
+
+    for (let i = 0; i < 10; i++) {
+        // Create the outer circle
+        const outerCircle = document.createElement('div');
+        outerCircle.className = 'outer-circle';
+
+        // Create the inner circle
+        const circle = document.createElement('div');
+        circle.id = `circle_${symbol}_${i}`;
+        circle.className = 'circle';
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.innerText = i;
+
+        const percentage = document.createElement('div');
+        percentage.id = `percent_${symbol}_${i}`;
+        percentage.className = 'percentage';
+        percentage.innerText = '0%';
+
+        const lastDigitIndicator = document.createElement('div');
+        lastDigitIndicator.id = `lastDigit_${symbol}_${i}`;
+        lastDigitIndicator.className = 'last-digit-indicator';
+
+        circle.appendChild(label);
+        circle.appendChild(percentage);
+        circle.appendChild(lastDigitIndicator);
+
+        // Append the inner circle to the outer circle
+        outerCircle.appendChild(circle);
+
+        // Append the outer circle to the circle container
+        circleContainer.appendChild(outerCircle);
+    }
+    cell.appendChild(circleContainer);
+    row.appendChild(cell);
+    return row;
+}
+
+// Append the circle rows to the summary table
+function appendCircleRows() {
+    const summaryDataArray = JSON.parse(localStorage.getItem('summaryArray')) || [];
+    summaryDataArray.forEach((summaryData, index) => {
+        const rows = document.querySelectorAll(`#row_${index}_0, [id^="row_${index}_"]`);
+        const lastDetailRow = rows[rows.length - 1];
+        if (lastDetailRow) {
+            const marketSelect = lastDetailRow.querySelector('select[id^="marketSelect"]').value;
+            const circleRow = createCircleRow(marketSelect);
+            lastDetailRow.parentNode.insertBefore(circleRow, lastDetailRow.nextSibling);
+        }
+    });
+}
+
+// Call the appendCircleRows function on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function () {
+    appendCircleRows();
+});
+
+function updateCirclePercentages(symbol, percentages, lastDigit) {
+    // Reset classes for all circles
+    for (let i = 0; i < 10; i++) {
+        const circle = document.getElementById(`circle_${symbol}_${i}`);
+        circle.classList.remove('max-percentage', 'min-percentage', 'show-indicator');
+    }
+
+    // Update percentages and show last digit indicator
+    percentages.forEach((percentage, index) => {
+        const circle = document.getElementById(`circle_${symbol}_${index}`);
+        const percentageText = document.getElementById(`percent_${symbol}_${index}`);
+        if (circle && percentageText) {
+            percentageText.innerText = `${percentage}%`;
+            if (index === lastDigit) {
+                circle.classList.add('show-indicator');
+            }
+        }
+    });
+
+    // Determine max and min percentages
+    const maxPercentage = Math.max(...percentages);
+    const minPercentage = Math.min(...percentages);
+
+    // Apply classes for max and min percentages
+    percentages.forEach((percentage, index) => {
+        const circle = document.getElementById(`circle_${symbol}_${index}`);
+        if (circle) {
+            if (parseFloat(percentage) === maxPercentage) {
+                circle.classList.add('max-percentage');
+            }
+            if (parseFloat(percentage) === minPercentage) {
+                circle.classList.add('min-percentage');
+            }
+        }
+    });
+}
+
+const ticksResponse = async (res) => {
+    const data = JSON.parse(res.data);
+    if (data.msg_type === 'history') {
+        const symbol = data.echo_req.ticks_history;
+        ticksData[symbol] = data.history.prices.map((price) => Number(price).toFixed(data.pip_size));
+    }
+
+    if (data.msg_type === 'tick') {
+        const symbol = data.echo_req.ticks_history;
+        const tick = Number(data.tick.quote).toFixed(data.tick.pip_size);
+        ticksData[symbol].push(tick);
+
+        if (ticksData[symbol].length > 1000) {
+            ticksData[symbol].shift();
+        }
+
+        const digitCount = Array(10).fill(0);
+        ticksData[symbol].forEach(tick => {
+            const lastDigit = tick.charAt(tick.length - 1);
+            digitCount[parseInt(lastDigit)]++;
+        });
+
+        const totalTicks = ticksData[symbol].length;
+        const percentages = digitCount.map(count => ((count / totalTicks) * 100).toFixed(1));
+        updatePercentagesTable(symbol, percentages);
+        updateCirclePercentages(symbol, percentages, parseInt(tick.charAt(tick.length - 1)));
+
+        const { risePercentage, fallPercentage } = calculateRiseFall(ticksData[symbol]);
+        const { evenPercentage, oddPercentage } = calculateEvenOdd(digitCount);
+        const { overPercentages, underPercentages } = calculateOverUnder(digitCount, totalTicks);
+
+        updateSummaryTable(symbol, risePercentage, fallPercentage, evenPercentage, oddPercentage);
+        updateOverUnderTable(symbol, overPercentages, underPercentages);
+        updateRedGreenBar(symbol, digitCount, totalTicks);
+    }
+};
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    let currentObserver = null;
+
+    document.getElementById('searchButton').addEventListener('click', function() {
+        const marketSelect = document.getElementById('marketSelect').value;
+        const metricSelect = document.getElementById('metricSelect').value;
+
+        const cellId = `${metricSelect}_${marketSelect}`;
+        const percentageCell = document.getElementById(cellId);
+
+        if (currentObserver) {
+            currentObserver.disconnect();
+        }
+
+        if (percentageCell) {
+            const percentage = percentageCell.innerText;
+            document.getElementById('percentageResult').innerText = percentage;
+
+            // Create a MutationObserver to watch for changes in the cell
+            currentObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        document.getElementById('percentageResult').innerText = percentageCell.innerText;
+                        compareDetailAndPercentage(); // Update row color status when cell changes
+                    }
+                });
+            });
+
+            // Configure the observer to watch for childList changes
+            const config = { childList: true };
+            currentObserver.observe(percentageCell, config);
+        } else {
+            document.getElementById('percentageResult').innerText = 'N/A';
+        }
+    });
+
+    window.addEventListener('storage', function (event) {
+        if (event.key === 'summaryArray') {
+            updateActiveNotifiers();
+            compareDetailAndPercentage(); // Update row color status on storage change
+        }
+    });
+});
+
+
+    </script>
+</body>
+
+</html>

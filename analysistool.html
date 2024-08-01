@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    
+
+    <title>Deriv API - Tick Data Stream</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label,
+        button {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Disabled button styles */
+        button:disabled {
+            background-color: grey; /* Make the button grey when disabled */
+            cursor: not-allowed; /* Disable the pointer cursor */
+        }
+
+        #errorMessages {
+            color: red;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+            font-size: 24px;
+        }
+
+        /* Circles container styles */
+        .circles-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Styles for each circle */
+        .circle {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            text-align: center;
+            position: relative;
+        }
+
+        .circle span, .circle p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center; /* Ensure text remains centered */
+    line-height: normal; /* Ensure the text remains centered vertically */
+}
+
+        /* Top and bottom circle container */
+        .circle-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+           
+        }
+
+       /* Triangle cursor styles */
+       .red-triangle {
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 7px solid red;
+    display: none;
+    position: absolute; /* Change to absolute positioning */
+    bottom: -12px; /* Adjust this value as needed to position the triangle below the circle */
+    left: 50%; /* Center the triangle cursor */
+    transform: translateX(-50%); /* Adjust the triangle cursor's horizontal positioning */
+}
+
+        /* Red and light green border styles */
+        .red-border {
+            border: 3px solid red;
+        }
+
+        .light-green-border {
+            border: 3px solid rgb(37, 173, 37);
+        }
+
+        #chartContainer {
+    display: none;
+}
+
+    </style>
+</head>
+
+<body>
+    
+    <h1>Deriv API - Tick Data Stream</h1>
+
+    <div class="container">
+        <!-- Market Selection -->
+        <div>
+            <label for="marketSelect">Select Market Symbol:</label>
+            <select id="marketSelect">
+                <option value="R_10">Volatility 10</option>
+                <option value="1HZ10V">Volatility 10s</option>
+                <option value="R_25">Volatility 25</option>
+                <option value="1HZ25V">Volatility 25s</option>
+                <option value="R_50">Volatility 50</option>
+                <option value="1HZ50V">Volatility 50s</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="1HZ75V">Volatility 75s</option>
+                <option value="R_100">Volatility 100</option>
+                <option value="1HZ100V">Volatility 100s</option>
+                <option value="RDBEAR">Bear market</option>
+                <option value="RDBULL">Bull market</option>
+                <option value="JD10">Jump Index 10</option>
+                <option value="JD25">Jump Index 25</option>
+                <option value="JD50">Jump Index 50</option>
+                <option value="JD75">Jump Index 75</option>
+                <option value="JD100">Jump Index 100</option>
+            </select>
+        </div>
+
+        <!-- Ticks Input -->
+        <div>
+            <label for="ticksInput">Number of Ticks:</label>
+            <input type="number" id="ticksInput" min="1" placeholder="Enter number of ticks">
+        </div>
+
+        <!-- Trade Type Selection -->
+        <div>
+            <label for="tradeTypeSelect">Select Trade Type:</label>
+            <select id="tradeTypeSelect">
+                <option value="rise/fall">Rise/Fall</option>
+                <option value="even/odd">Even/Odd</option>
+                <option value="over/under">Over/Under</option>
+            </select>
+        </div>
+
+        <!-- Over/Under Selection -->
+        <div id="overUnderContainer" class="conditional-container" style="display: none;">
+            <label for="overSelect">Over:</label>
+            <select id="overSelect">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+               
+            </select>
+
+            <label for="underSelect">Under:</label>
+            <select id="underSelect">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+               
+            </select>
+        </div>
+
+        <!-- Circles Container -->
+        <div class="circles-container">
+            <!-- Top row circles (0-4) -->
+            <div class="circle-row">
+                <div class="circle" id="circle0">
+                    <span>0</span>
+                    <p id="percent0">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle0"></div>
+                </div>
+                <div class="circle" id="circle1">
+                    <span>1</span>
+                    <p id="percent1">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle1"></div>
+                </div>
+                <div class="circle" id="circle2">
+                    <span>2</span>
+                    <p id="percent2">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle2"></div>
+                </div>
+                <div class="circle" id="circle3">
+                    <span>3</span>
+                    <p id="percent3">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle3"></div>
+                </div>
+                <div class="circle" id="circle4">
+                    <span>4</span>
+                    <p id="percent4">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle4"></div>
+                </div>
+            </div>
+
+            <!-- Bottom row circles (5-9) -->
+            <div class="circle-row">
+                <div class="circle" id="circle5">
+                    <span>5</span>
+                    <p id="percent5">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle5"></div>
+                </div>
+                <div class="circle" id="circle6">
+                    <span>6</span>
+                    <p id="percent6">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle6"></div>
+                </div>
+                <div class="circle" id="circle7">
+                    <span>7</span>
+                    <p id="percent7">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle7"></div>
+                </div>
+                <div class="circle" id="circle8">
+                    <span>8</span>
+                    <p id="percent8">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle8"></div>
+                </div>
+                <div class="circle" id="circle9">
+                    <span>9</span>
+                    <p id="percent9">0%</p>
+                    <!-- Red triangle cursor -->
+                    <div class="red-triangle" id="triangle9"></div>
+                </div>
+            </div>
+        </div>
+
+         <!-- Output (last digit display) -->
+         <div id="output"></div>
+
+        <!-- Buttons -->
+        <div>
+            <button id="startStreamBtn">Start analysis</button>
+            <button id="stopStreamBtn">Stop analysis</button>
+        </div>
+
+        <!-- Error Messages -->
+        <div id="errorMessages"></div>
+
+        <div id="chartContainer">
+            <canvas id="myChart" width="400" height="800" ></canvas>
+        </div>
+        
+        <p>Current Candle Color: <span id="candleColor">N/A</span></p>
+
+
+    </div>
+
+   <!-- JavaScript code -->
+<script type="module">
+    // Import Deriv API library
+    import DerivAPIBasic from 'https://cdn.skypack.dev/@deriv/deriv-api/dist/DerivAPIBasic';
+
+    const app_id = 1089; // Your app ID here
+    const connection = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${app_id}`);
+    const api = new DerivAPIBasic({ connection });
+
+    let ticksQuote = [];
+    let tickQuote1 = [];
+    let requestId = null;
+    let subscriptionActive = false;
+
+    // Get HTML elements
+    const symbol = document.getElementById('marketSelect');
+    const count = document.getElementById('ticksInput');
+    const tradeTypeSelect = document.getElementById('tradeTypeSelect');
+    const overUnderContainer = document.getElementById('overUnderContainer');
+    const overSelect = document.getElementById('overSelect');
+    const underSelect = document.getElementById('underSelect');
+    const errorMessages = document.getElementById('errorMessages');
+    const output = document.getElementById('output');
+    const startStreamBtn = document.getElementById('startStreamBtn');
+    const stopStreamBtn = document.getElementById('stopStreamBtn');
+
+    // Circle elements for displaying percentages
+    const circles = [];
+    for (let i = 0; i < 10; i++) {
+        circles.push(document.getElementById(`percent${i}`));
+    }
+
+    // Triangle cursors
+    const triangles = [];
+    for (let i = 0; i < 10; i++) {
+        triangles.push(document.getElementById(`triangle${i}`));
+    }
+
+    // Initialize digit count array
+    let digitCount = Array(10).fill(0);
+
+    // Generate tick request
+    function generateTickRequest() {
+        return {
+            ticks_history: symbol.value,
+            count: Number(count.value),
+            adjust_start_time: 1,
+            start: 1,
+            end: 'latest',
+            style: 'ticks',
+            subscribe: 1
+        };
+    }
+ 
+    async function fetchCandleColor(symbol) {
+    const request = {
+        ticks_history: symbol,
+        adjust_start_time: 1,
+        start: 1,
+        end: 'latest',
+        style: 'candles',
+        subscribe: 1,
+        granularity: 60 // 1-minute time frame
+    };
+
+    const candleResponse = async (res) => {
+        const data = JSON.parse(res.data);
+        if (data.msg_type === 'candles') {
+            const candles = data.candles;
+            if (candles.length > 0) {
+                const latestCandle = candles[candles.length - 1];
+                const candleColor = latestCandle.open < latestCandle.close ? 'Green' : 'Red';
+                const candleColorElement = document.getElementById('candleColor');
+                candleColorElement.textContent = candleColor;
+                candleColorElement.style.color = candleColor.toLowerCase(); // Set the text color
+            }
+        } else if (data.msg_type === 'ohlc') {
+            const latestCandle = data.ohlc;
+            const candleColor = latestCandle.open < latestCandle.close ? 'Green' : 'Red';
+            const candleColorElement = document.getElementById('candleColor');
+            candleColorElement.textContent = candleColor;
+            candleColorElement.style.color = candleColor.toLowerCase(); // Set the text color
+        }
+    };
+
+    connection.addEventListener('message', candleResponse);
+    await api.subscribe(request);
+}
+
+    const ticksResponse = async (res) => {
+    const data = JSON.parse(res.data);
+    if (data.msg_type === 'history') {
+        ticksQuote = data.history.prices.map((price) => Number(price).toFixed(data.pip_size));
+        tickQuote1 = [...ticksQuote];
+    }
+
+    if (data.msg_type === 'tick') {
+        requestId = data.tick.id;
+
+        const tick = Number(data.tick.quote).toFixed(data.tick.pip_size);
+        ticksQuote.push(tick);
+        tickQuote1.push(tick);
+
+        // Maintain array length based on count
+        if (ticksQuote.length > Number(count.value)) {
+            ticksQuote.shift();
+        }
+
+
+        if (tickQuote1.length > Number(count.value) + 1) {
+        tickQuote1.shift();
+    }
+        // Calculate last digit and update digit count
+        const lastDigit = tick.charAt(tick.length - 1);
+        const digitIndex = parseInt(lastDigit);
+
+        // Reset digit count array
+        digitCount = Array(10).fill(0);
+
+        // Update digit count based on the last `count.value` tick quotes
+        for (let i = 0; i < ticksQuote.length; i++) {
+            const quoteLastDigit = ticksQuote[i].charAt(ticksQuote[i].length - 1);
+            const quoteDigitIndex = parseInt(quoteLastDigit);
+            digitCount[quoteDigitIndex]++;
+        }
+
+        // Calculate and update percentages for each digit
+        const totalTicks = ticksQuote.length;
+        for (let i = 0; i < 10; i++) {
+            const percentage = ((digitCount[i] / totalTicks) * 100).toFixed(1);
+            circles[i].innerHTML = `${percentage}%`;
+        }
+
+        // Update the output with the current last digit
+        output.innerHTML = `Last Digit: ${lastDigit}`;
+
+        // Move the red triangle cursor to the respective circle
+        for (let i = 0; i < 10; i++) {
+            triangles[i].style.display = 'none';
+        }
+
+        // Show the triangle cursor at the appropriate circle based on last digit
+        triangles[digitIndex].style.display = 'block';
+
+        // Update borders
+        updateBorders();
+
+        // Update the chart to reflect new digit counts
+        if (tradeTypeSelect.value === 'even/odd') {
+            updateChart();
+        } else if (tradeTypeSelect.value === 'over/under') {
+            updateOverUnderChart();
+        } else if (tradeTypeSelect.value === 'rise/fall') {
+            updateRiseFallChart();
+        }
+    }
+};
+
+let riseCount = 0;
+let fallCount = 0;
+
+function updateRiseFallChart() {
+    // Reset rise and fall counts
+    riseCount = 0;
+    fallCount = 0;
+
+    // Calculate rise and fall counts based on tick comparisons using tickQuote1
+    for (let i = 1; i < tickQuote1.length; i++) {
+        if (parseFloat(tickQuote1[i]) > parseFloat(tickQuote1[i - 1])) {
+            riseCount++;
+        } else if (parseFloat(tickQuote1[i]) < parseFloat(tickQuote1[i - 1])) {
+            fallCount++;
+        }
+    }
+
+    // Calculate total count
+    const total = riseCount + fallCount;
+
+    // Calculate rise and fall percentages
+    const risePercentage = total === 0 ? 0 : ((riseCount / total) * 100).toFixed(1);
+    const fallPercentage = total === 0 ? 0 : ((fallCount / total) * 100).toFixed(1);
+
+    // Update chart data
+    chart.data.labels = ['Rise', 'Fall'];
+    chart.data.datasets[0].data = [risePercentage, fallPercentage];
+    chart.update();
+
+    
+}
+
+    // Function to stop the tick stream
+    const stopTickStream = async () => {
+        connection.removeEventListener('message', ticksResponse);
+
+        if (subscriptionActive && requestId) {
+            await api.forget(requestId);
+            requestId = null;
+            subscriptionActive = false;
+
+            // Reset digit count and clear ticksQuote array
+            digitCount = Array(10).fill(0);
+            ticksQuote = [];
+
+            // Reset circles and triangles
+            for (let i = 0; i < 10; i++) {
+                circles[i].innerHTML = '0%';
+                triangles[i].style.display = 'none';
+                circles[i].parentNode.classList.remove('red-border', 'light-green-border');
+            }
+
+            // Clear output display
+            output.innerHTML = '';
+
+            startStreamBtn.disabled = false;
+        }
+    };
+
+    // Function to start the tick stream
+    const getTickStream = async () => {
+    if (!count.value || count.value < 1) {
+        errorMessages.innerHTML = '<p class="text-danger">Please provide a valid number of ticks.</p>';
+        return;
+    }
+
+    await stopTickStream();
+
+    try {
+        const requestObject = generateTickRequest();
+        requestId = requestObject.ticks_history;
+
+        await api.subscribe(requestObject);
+
+        connection.addEventListener('message', ticksResponse);
+
+        subscriptionActive = true;
+        startStreamBtn.disabled = true;
+
+        // Show the chart based on the selected trade type
+        if (tradeTypeSelect.value === 'even/odd' || tradeTypeSelect.value === 'over/under'|| tradeTypeSelect.value === 'rise/fall') {
+            document.getElementById('chartContainer').style.display = 'block';
+        } else {
+            document.getElementById('chartContainer').style.display = 'none';
+        }
+
+        fetchCandleColor(symbol.value);
+    } catch (error) {
+        errorMessages.innerHTML = `<p class="text-danger">Error: ${error.message}</p>`;
+        console.error(`Failed to start tick stream: ${error.message}`);
+    }
+};
+
+
+function updateOverUnderChart() {
+    const overValue = parseInt(overSelect.value);
+    const underValue = parseInt(underSelect.value);
+
+    const overCount = digitCount.slice(overValue + 1).reduce((acc, count) => acc + count, 0);
+    const underCount = digitCount.slice(0, underValue).reduce((acc, count) => acc + count, 0);
+
+    const total = overCount + underCount;
+    const overPercentage = total === 0 ? 0 : ((overCount / total) * 100).toFixed(1);
+    const underPercentage = total === 0 ? 0 : ((underCount / total) * 100).toFixed(1);
+
+    chart.data.labels = ['Over', 'Under'];
+    chart.data.datasets[0].data = [overPercentage, underPercentage];
+    chart.update();
+}
+
+    // Function to update borders based on the highest and lowest percentages
+    function updateBorders() {
+        let maxPercentage = -Infinity;
+        let minPercentage = Infinity;
+        let maxIndices = [];
+        let minIndices = [];
+
+        // Calculate max and min percentages and their indices
+        for (let i = 0; i < 10; i++) {
+            const percentage = parseFloat(circles[i].innerText.replace('%', ''));
+            if (percentage > maxPercentage) {
+                maxPercentage = percentage;
+                maxIndices = [i];
+            } else if (percentage === maxPercentage) {
+                maxIndices.push(i);
+            }
+
+            if (percentage < minPercentage) {
+                minPercentage = percentage;
+                minIndices = [i];
+            } else if (percentage === minPercentage) {
+                minIndices.push(i);
+            }
+        }
+
+        // Remove existing borders
+        for (let i = 0; i < 10; i++) {
+            circles[i].parentNode.classList.remove('red-border', 'light-green-border');
+        }
+
+        // Add red border for lowest percentage
+        for (const index of minIndices) {
+            circles[index].parentNode.classList.add('red-border');
+        }
+
+        // Add light green border for highest percentage
+        for (const index of maxIndices) {
+            circles[index].parentNode.classList.add('light-green-border');
+        }
+    }
+
+    // Function to handle the selection of trade type
+    tradeTypeSelect.addEventListener('change', () => {
+        const selectedTradeType = tradeTypeSelect.value;
+
+        if (selectedTradeType === 'over/under') {
+            // Show the Over/Under options when 'over/under' is selected
+            overUnderContainer.style.display = 'block';
+        } else {
+            // Hide the Over/Under options for other trade types
+            overUnderContainer.style.display = 'none';
+        }
+    });
+
+    overSelect.addEventListener('change', () => {
+        const overValue = parseInt(overSelect.value);
+        underSelect.value = overValue + 1;
+    });
+
+    underSelect.addEventListener('change', () => {
+        const underValue = parseInt(underSelect.value);
+        overSelect.value = underValue - 1;
+    });
+
+    startStreamBtn.addEventListener('click', () => {
+    if (tradeTypeSelect.value === 'even/odd' || tradeTypeSelect.value === 'over/under' || tradeTypeSelect.value === 'rise/fall') {
+        document.getElementById('chartContainer').style.display = 'block';
+    } else {
+        document.getElementById('chartContainer').style.display = 'none';
+    }
+    getTickStream();
+});
+
+
+
+
+    stopStreamBtn.addEventListener('click', stopTickStream);
+
+    // Chart.js setup
+    const ctx = document.getElementById('myChart').getContext('2d');
+    let chart;
+
+   
+
+    function updateChart() {
+    if (tradeTypeSelect.value === 'even/odd') {
+        const evenCount = digitCount.filter((count, index) => index % 2 === 0).reduce((acc, count) => acc + count, 0);
+        const oddCount = digitCount.filter((count, index) => index % 2 !== 0).reduce((acc, count) => acc + count, 0);
+
+        const total = evenCount + oddCount;
+
+        const evenPercentage = total === 0 ? 0 : ((evenCount / total) * 100).toFixed(1);
+        const oddPercentage = total === 0 ? 0 : ((oddCount / total) * 100).toFixed(1);
+
+        chart.data.labels = ['Even', 'Odd'];
+        chart.data.datasets[0].data = [evenPercentage, oddPercentage];
+    } else if (tradeTypeSelect.value === 'over/under') {
+        const overValue = parseInt(overSelect.value);
+        const underValue = parseInt(underSelect.value);
+
+        const overCount = digitCount.slice(overValue + 1).reduce((acc, count) => acc + count, 0);
+        const underCount = digitCount.slice(0, underValue).reduce((acc, count) => acc + count, 0);
+
+        const total = overCount + underCount;
+        const overPercentage = total === 0 ? 0 : ((overCount / total) * 100).toFixed(1);
+        const underPercentage = total === 0 ? 0 : ((underCount / total) * 100).toFixed(1);
+
+        chart.data.labels = ['Over', 'Under'];
+        chart.data.datasets[0].data = [overPercentage, underPercentage];
+    }
+
+    chart.update();
+}
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    initializeChart();
+});
+
+function initializeChart() {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Even', 'Odd'],
+            datasets: [{
+                label: 'Percentage',
+                data: [50, 50], // Initial data
+                backgroundColor: ['green', 'red']
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: (value) => `${value}%`,
+                    color: '#000', // Change color as needed
+                    font: {
+                        weight: 'bold'
+                    }
+                }
+            },
+            animation: {
+                duration: 200, // Duration of the animation in milliseconds
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 5 // Adjust the step size to 5
+                    },
+                    max: 100
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+</script>
+
+</body>
+</html>

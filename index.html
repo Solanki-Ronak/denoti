@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>DeNoti (Deriv Notifier)</title>
+  <style>
+    /* Styling for the body */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+   
+
+    .container {
+        max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Styling for the heading */
+    h1 {
+      font-size: 32px;
+      margin-bottom: 20px; /* Add some space below the heading */
+      text-align: center;
+    }
+
+    /* Styling for the button container */
+    .button-container {
+      display: flex; /* Use flexbox */
+      flex-direction: column; /* Arrange buttons vertically */
+      justify-content: center; /* Center the buttons horizontally */
+      gap: 20px; /* Add space between buttons */
+    }
+
+    /* Styling for buttons */
+    button {
+      margin-top: 0; /* Remove top margin for vertical layout */
+      cursor: pointer;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      height: 40px;
+    }
+
+    /* Button hover effect */
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>DeNoti (Deriv Notifier)</h1>
+
+  <div class="container">
+    <div class="button-container">
+      <button id="analysis-tool">ANALYSIS TOOL</button>
+      <button id="new-signal-notifier">NEW SIGNAL NOTIFIER</button>
+      <button id="saved-signal-notifiers">SAVED SIGNAL NOTIFIERS</button>
+      <button id="notes">NOTES</button>
+    </div>
+
+    <script>
+      // Get the "Analysis Tool" button element
+      const analysisToolButton = document.getElementById("analysis-tool");
+
+      // Add an event listener to handle click events
+      analysisToolButton.addEventListener("click", function() {
+        // Redirect the user to the trial.html page
+        window.location.href = "analysistool.html";
+      });
+
+      // Add event listeners to the other buttons
+      const newSignalNotifierButton = document.getElementById("new-signal-notifier");
+      const savedSignalNotifiersButton = document.getElementById("saved-signal-notifiers");
+      const notesButton = document.getElementById("notes");
+
+      // You can add functionalities to the other buttons as needed
+      newSignalNotifierButton.addEventListener("click", function() {
+        window.location.href = "denoti1.html";
+      });
+
+      savedSignalNotifiersButton.addEventListener("click", function() {
+        window.location.href = "notifierbuttons.html";
+      });
+
+      notesButton.addEventListener("click", function() {
+        window.location.href = "practice3.html";
+      });
+    </script>
+  </div>
+</body>
+
+</html>

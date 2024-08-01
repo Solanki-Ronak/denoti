@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Notifier (DENOTI)</title>
+    <style>
+        /* Add your styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label,
+        button {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+
+        #errorMessages {
+            color: red;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+            font-size: 24px;
+        }
+
+        .percentage-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .percentage-options button,
+        .percentage-options .display-section {
+            width: 45%;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .display-section {
+            width: 100%;
+            height: 30px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            width: 300px;
+            max-height: 70vh; 
+            overflow: auto;
+        }
+
+        .modal button {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .modal #doneButton {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .modal h3 {
+            text-align: center;
+        }
+
+        #modalDisplay {
+            margin-top: 50px;
+            padding: 10px;
+        }
+
+        .button-textfield {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .button-textfield button {
+            width: 45%;
+        }
+
+        .button-textfield input {
+            width: 50%;
+            padding: 8px;
+            margin-left: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    margin-right: 10px; /* Add spacing between checkboxes */
+    width: calc(20% - 10px); /* Set width for each checkbox */
+    box-sizing: border-box; /* Include padding and border in the width calculation */
+}
+
+.checkbox-group input[type="checkbox"] {
+    transform: scale(1.5); /* Increase checkbox size */
+    margin-right: 5px; /* Add spacing between checkbox and label */
+}
+
+.checkbox-group label:nth-child(5) {
+    margin-bottom: 10px; /* Add margin after the fifth checkbox */
+}
+
+    </style>
+</head>
+
+<body>
+    <h1>DERIV NOTIFIER (DENOTI)</h1>
+
+    <div class="container">
+        <!-- Name of the Strategy -->
+        <div>
+            <label for="strategyName">Name of the Strategy:</label>
+            <input type="text" id="strategyName" placeholder="Enter strategy name">
+        </div>
+        <div>
+            <label for="explanation">Explanation:</label>
+            <input type="text" id="strategyexplanations" placeholder="Explain your strategy">
+        </div>
+
+        <!-- Market Selection -->
+        <div>
+            <label for="marketSelect">Select Market Symbol:</label>
+            <select id="marketSelect">
+                <option></option>
+                <option value="All volatilties">All Volatilities</option>
+                <option value="All volatilties (1s)">All Volatilities(1s)</option>
+                <option value="All Jump indexes">All Jump indexes</option>
+                <option value="Volatility 10">Volatility 10</option>
+                <option value="Volatility 10s">Volatility 10s</option>
+                <option value="Volatility 25">Volatility 25</option>
+                <option value="Volatility 25s">Volatility 25s</option>
+                <option value="Volatility 50">Volatility 50</option>
+                <option value="Volatility 50s">Volatility 50s</option>
+                <option value="Volatility 75">Volatility 75</option>
+                <option value="Volatility 75s">Volatility 75s</option>
+                <option value="Volatility 100">Volatility 100</option>
+                <option value="Volatility 100s">Volatility 100s</option>
+                <option value="Bear market">Bear market</option>
+                <option value="Bull market">Bull market</option>
+                <option value="Jump Index 10">Jump Index 10</option>
+                <option value="Jump Index 25">Jump Index 25</option>
+                <option value="Jump Index 50">Jump Index 50</option>
+                <option value="Jump Index 75">Jump Index 75</option>
+                <option value="Jump Index 100">Jump Index 100</option>
+            </select>
+        </div>
+
+        <!-- Ticks Input -->
+        <div>
+            <label for="ticksInput">Number of Ticks:</label>
+            <input type="number" id="ticksInput" min="1" placeholder="Enter number of ticks">
+        </div>
+
+        <!-- Buttons and Text Fields -->
+        <h2>Choose the Percentages</h2>
+        <div class="button-textfield">
+            <button class="option-button" id="redBarButton" data-type="redBar">RED BAR</button>
+            <input type="text" id="redBarInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="greenBarButton" data-type="greenBar">GREEN BAR</button>
+            <input type="text" id="greenBarInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="zeroButton" data-type="number">0</button>
+            <input type="text" id="zeroInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="oneButton" data-type="number">1</button>
+            <input type="text" id="oneInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="twoButton" data-type="number">2</button>
+            <input type="text" id="twoInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="threeButton" data-type="number">3</button>
+            <input type="text" id="threeInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="fourButton" data-type="number">4</button>
+            <input type="text" id="fourInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="fiveButton" data-type="number">5</button>
+            <input type="text" id="fiveInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="sixButton" data-type="number">6</button>
+            <input type="text" id="sixInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="sevenButton" data-type="number">7</button>
+            <input type="text" id="sevenInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="eightButton" data-type="number">8</button>
+            <input type="text" id="eightInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="nineButton" data-type="number">9</button>
+            <input type="text" id="nineInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="overButton" data-type="overUnder">OVER</button>
+            <input type="text" id="overInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="underButton" data-type="overUnder">UNDER</button>
+            <input type="text" id="underInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="evenButton" data-type="number1">EVEN</button>
+            <input type="text" id="evenInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="oddButton" data-type="number1">ODD</button>
+            <input type="text" id="oddInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="riseButton" data-type="number1">RISE</button>
+            <input type="text" id="riseInput" readonly>
+        </div>
+        <div class="button-textfield">
+            <button class="option-button" id="fallButton" data-type="number1">FALL</button>
+            <input type="text" id="fallInput"readonly>
+        </div>
+
+        <div>
+            <label for="candlecolor">Choose a candle color:</label>
+            <select id="candlecolor">
+                <option value="Default">Default</option>
+                <option value="Red">Red</option>
+                <option value="Green">Green</option>
+            </select>
+        </div>
+
+        <!-- Notification sound selection -->
+        <div>
+            <label for="notificationsound">Choose a notification sound:</label>
+            <select id="notificationsound">
+               
+                <option value="Chime">Chime</option>
+                <option value="Bell">Bell</option>
+                <option value="device">Choose from the device</option>
+            </select>
+        </div>
+
+        <!-- Save Button -->
+        <div>
+            <button id="saveButton">Save</button>
+        </div>
+        <div id="modalerror3"></div>
+
+        <!-- Modal Summary Structure -->
+<div class="modal" id="modalSummary">
+    <h3>Summary</h3>
+    <div id="summaryContent"></div>
+    <button id="backSummaryButton">Back</button>
+    <button id="confirmSaveButton">Save</button>
+</div>
+    </div>
+
+    <!-- Modal Structure -->
+    <div class="modal" id="modal">
+        <h3 id="modalHeading"></h3>
+        <div id="modalContent"></div>
+        <input type="text" id="modalInput" readonly>
+        <button id="backButton">Back</button>
+        <button id="saveModalButton">Save</button>
+    </div>
+
+    <!-- Modal 2 Structure -->
+    <div class="modal" id="modal2">
+        <h3 id="modal2Heading"></h3>
+        <div id="modal2Content"></div>
+        <input type="text" id="modal2Input" readonly>
+        <button id="backButton2">Back</button>
+        <button id="saveModal2Button">Save</button>
+    </div>
+
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('modal');
+    const modal2 = document.getElementById('modal2');
+    const modalHeading = document.getElementById('modalHeading');
+    const modal2Heading = document.getElementById('modal2Heading');
+    const modalContent = document.getElementById('modalContent');
+    const modal2Content = document.getElementById('modal2Content');
+    const modalInput = document.getElementById('modalInput');
+    const modal2Input = document.getElementById('modal2Input');
+    const optionButtons = document.querySelectorAll('.option-button');
+    const modalError = document.createElement('div');
+    const modal2Error = document.createElement('div');
+    modalError.style.color = 'red';
+    modalerror3.style.color = 'red';
+    modal2Error.style.color = 'red';
+    modal.appendChild(modalError);
+    modal2.appendChild(modal2Error);
+    let currentButtonId;
+    let selectedValues = {}; // Store selected values for each button
+    let overUnderValues = {}; // Store over/under values for each button
+
+    optionButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const type = this.getAttribute('data-type');
+            const buttonText = this.textContent;
+            currentButtonId = this.id;
+            showModal(type, buttonText);
+        });
+    });
+
+    const notificationsoundSelect = document.getElementById('notificationsound');
+
+notificationsoundSelect.addEventListener('change', function () {
+    const selectedOption = this.value;
+
+    if (selectedOption === 'device') {
+        // Trigger file input element to choose an MP3 file
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'audio/mp3'; // Restrict to MP3 files
+        fileInput.addEventListener('change', function () {
+            const selectedFile = this.files[0];
+            const fileName = selectedFile.name;
+
+            // Add the selected MP3 file to the dropdown list
+            const dropdown = document.getElementById('notificationsound');
+            const option = document.createElement('option');
+            option.value = fileName;
+            option.textContent = fileName;
+            dropdown.appendChild(option);
+        });
+
+        // Trigger the file input element
+        fileInput.click();
+    }
+});
+    document.getElementById('saveButton').addEventListener('click', function () {
+    const strategyName = document.getElementById('strategyName').value.trim();
+    const explanation = document.getElementById('strategyexplanations').value.trim();
+    const marketSelect = document.getElementById('marketSelect').value;
+    const ticksInput = document.getElementById('ticksInput').value.trim();
+    const redBarInput = document.getElementById('redBarInput').value.trim();
+    const greenBarInput = document.getElementById('greenBarInput').value.trim();
+    const zeroInput = document.getElementById('zeroInput').value.trim();
+    const oneInput = document.getElementById('oneInput').value.trim();
+    const twoInput = document.getElementById('twoInput').value.trim();
+    const threeInput = document.getElementById('threeInput').value.trim();
+    const fourInput = document.getElementById('fourInput').value.trim();
+    const fiveInput = document.getElementById('fiveInput').value.trim();
+    const sixInput = document.getElementById('sixInput').value.trim();
+    const sevenInput = document.getElementById('sevenInput').value.trim();
+    const eightInput = document.getElementById('eightInput').value.trim();
+    const nineInput = document.getElementById('nineInput').value.trim();
+    const overInput = document.getElementById('overInput').value.trim();
+    const underInput = document.getElementById('underInput').value.trim();
+    const evenInput = document.getElementById('evenInput').value.trim();
+    const oddInput = document.getElementById('oddInput').value.trim();
+    const riseInput = document.getElementById('riseInput').value.trim();
+    const fallInput = document.getElementById('fallInput').value.trim();
+    const candleColor = document.getElementById('candlecolor').value;
+    const notificationSound = document.getElementById('notificationsound').value;
+
+    // if (!strategyName || !explanation || !marketSelect || !ticksInput || !redBarInput || !greenBarInput || !zeroInput || !oneInput || !twoInput || !threeInput || !fourInput || !fiveInput || !sixInput || !sevenInput || !eightInput || !nineInput || !overInput || !underInput || !evenInput || !oddInput || !riseInput || !fallInput || !candleColor || !notificationSound) {
+        
+    //     modalerror3.textContent = 'Enter values on all fields';
+    //     return;
+    // }
+    modalerror3.textContent = '';
+    const summaryContent = document.getElementById('summaryContent');
+    summaryContent.innerHTML = `
+        <p>Name of the Strategy: ${strategyName}</p>
+        <p>Explanation: ${explanation}</p>
+        <p>Select Market Symbol: ${marketSelect}</p>
+        <p>Number of Ticks: ${ticksInput}</p>
+        <h4>Percentages</h4>
+        <p>RED BAR: ${redBarInput}</p>
+        <p>GREEN BAR: ${greenBarInput}</p>
+        <p>NUMBER 0: ${zeroInput}</p>
+        <p>NUMBER 1: ${oneInput}</p>
+        <p>NUMBER 2: ${twoInput}</p>
+        <p>NUMBER 3: ${threeInput}</p>
+        <p>NUMBER 4: ${fourInput}</p>
+        <p>NUMBER 5: ${fiveInput}</p>
+        <p>NUMBER 6: ${sixInput}</p>
+        <p>NUMBER 7: ${sevenInput}</p>
+        <p>NUMBER 8: ${eightInput}</p>
+        <p>NUMBER 9: ${nineInput}</p>
+        <p>OVER : ${overInput}</p>
+        <p>UNDER: ${underInput}</p>
+        <p>EVEN: ${evenInput}</p>
+        <p>ODD: ${oddInput}</p>
+        <p>RISE: ${riseInput}</p>
+        <p>FALL: ${fallInput}</p>
+        <p>Candle color: ${candleColor}</p>
+        <p>Notification sound: ${notificationSound}</p>
+    `;
+
+    const modalSummary = document.getElementById('modalSummary');
+    modalSummary.style.display = 'block';
+});
+
+document.getElementById('backSummaryButton').addEventListener('click', function () {
+    const modalSummary = document.getElementById('modalSummary');
+    modalSummary.style.display = 'none';
+});
+
+document.getElementById('confirmSaveButton').addEventListener('click', function () {
+    // Gather summary data
+    const summary = {
+        strategyName: document.getElementById('strategyName').value.trim(),
+        explanation: document.getElementById('strategyexplanations').value.trim(),
+        marketSelect: document.getElementById('marketSelect').value,
+        ticksInput: document.getElementById('ticksInput').value.trim(),
+        redBarInput: document.getElementById('redBarInput').value.trim(),
+        greenBarInput: document.getElementById('greenBarInput').value.trim(),
+        zeroInput: document.getElementById('zeroInput').value.trim(),
+        oneInput: document.getElementById('oneInput').value.trim(),
+        twoInput: document.getElementById('twoInput').value.trim(),
+        threeInput: document.getElementById('threeInput').value.trim(),
+        fourInput: document.getElementById('fourInput').value.trim(),
+        fiveInput: document.getElementById('fiveInput').value.trim(),
+        sixInput: document.getElementById('sixInput').value.trim(),
+        sevenInput: document.getElementById('sevenInput').value.trim(),
+        eightInput: document.getElementById('eightInput').value.trim(),
+        nineInput: document.getElementById('nineInput').value.trim(),
+        overInput: document.getElementById('overInput').value.trim(),
+        underInput: document.getElementById('underInput').value.trim(),
+        evenInput: document.getElementById('evenInput').value.trim(),
+        oddInput: document.getElementById('oddInput').value.trim(),
+        riseInput: document.getElementById('riseInput').value.trim(),
+        fallInput: document.getElementById('fallInput').value.trim(),
+        candleColor: document.getElementById('candlecolor').value,
+        notificationSound: document.getElementById('notificationsound').value
+    };
+
+    // Retrieve existing summary data array or initialize empty array
+    const summaryDataArray = JSON.parse(localStorage.getItem('summaryArray')) || [];
+
+    // Add new summary to the array
+    summaryDataArray.unshift(summary);
+
+    // Store updated summary data array in local storage
+    localStorage.setItem('summaryArray', JSON.stringify(summaryDataArray));
+
+    // Redirect to notifierbuttons.html
+    window.location.href = 'notifierbuttons.html';
+});
+
+
+
+
+    document.getElementById('backButton').addEventListener('click', function () {
+        modal.style.display = 'none';
+        clearErrors(); // Clear errors when switching modals
+        
+    });
+
+    document.getElementById('backButton2').addEventListener('click', function () {
+        modal2.style.display = 'none';
+        modal.style.display = 'block';
+        clearErrors(); // Clear errors when switching modals
+    });
+
+   document.getElementById('saveModalButton').addEventListener('click', function () {
+        if (currentButtonId === 'overButton' || currentButtonId === 'underButton') {
+        const modalInputValue = modalInput.value.trim();
+        const overUnderValue = document.getElementById('overUnderValue').value.trim();
+        if (modalInputValue === '' && overUnderValue === '' ) {
+                modalError.textContent = 'Select an option';
+                return;
+            }
+        if (modalInputValue === 'Default') {
+            if (overUnderValue !== '') {
+                modalError.textContent = 'Unclick on the checkbox to use default';
+                return;
+            }
+            
+        } 
+        else {     
+
+            if (overUnderValue === '') {
+                modalError.textContent = 'Select a number by clicking on the checkbox to use fixed or range';
+                return;
+            }
+            if (modalInputValue === '') {
+                modalError.textContent = 'Choose a fixed or range option';
+                return;
+            }
+        }
+
+        modalError.textContent = ''; // Clear error message
+        const overUnderType = currentButtonId === 'overButton' ? 'Over' : 'Under';
+        if(modalInputValue=='Default'){
+            selectedValues[currentButtonId] = modalInput.value; // Save selected value
+            const inputField = document.getElementById(currentButtonId.replace('Button', 'Input'));
+            inputField.value = modalInput.value;
+            modal.style.display = 'none';
+            clearErrors(); // Clear errors when closing modal
+        }
+        else{
+        const concatenatedValue = `${overUnderValue}, ${modalInputValue}`;
+        const inputField = document.getElementById(currentButtonId.replace('Button', 'Input'));
+        inputField.value = concatenatedValue;
+        modal.style.display = 'none';
+        }
+        
+        
+
+
+        
+        
+    }
+    else{
+
+        if (modalInput.value.trim() === '') {
+            modalError.textContent = 'Please choose a value';
+        } else {
+            modalError.textContent = ''; // Clear error message
+            selectedValues[currentButtonId] = modalInput.value; // Save selected value
+            const inputField = document.getElementById(currentButtonId.replace('Button', 'Input'));
+            inputField.value = modalInput.value;
+            modal.style.display = 'none';
+            clearErrors(); // Clear errors when closing modal
+        }
+        }
+    });
+
+
+    document.getElementById('saveModal2Button').addEventListener('click', function () {
+        if (modal2Input.value.trim() === '') {
+            modal2Error.textContent = 'Please choose a value';
+        } else {
+            modal2Error.textContent = ''; // Clear error message
+            const inputField = document.getElementById(currentButtonId.replace('Button', 'Input'));
+            const modal2Value = modal2Input.value;
+            selectedValues[currentButtonId] = modal2Value; // Save selected value
+            inputField.value = modal2Value;
+            modalInput.value = modal2Value; // Set modalInput value
+            modal2.style.display = 'none';
+            modal.style.display = 'block';
+            clearErrors(); // Clear errors when closing modal
+        }
+    });
+
+ function showModal(type, text) {
+    modalHeading.textContent = `OPTIONS FOR ${text}`;
+    modalContent.innerHTML = '';
+    modalInput.value = selectedValues[currentButtonId] || ''; // Set previously selected value
+
+    if (type === 'redBar' || type === 'greenBar') {
+        modalContent.innerHTML = `
+            <button onclick="setModalInput('Default')">DEFAULT</button>
+            <button onclick="setModalInput('Even')">EVEN</button>
+            <button onclick="setModalInput('Odd')">ODD</button>
+            <button onclick="showModal2('Fixed', 'Choose a Fixed Number')">FIXED</button>
+            <button onclick="showModal2('Range', 'Choose a Range')">RANGE</button>
+        `;
+    } else if (type === 'number') {
+        modalContent.innerHTML = `
+            <button onclick="setModalInput('Default')">DEFAULT</button>
+            <button onclick="showModal3('Fixed', 'Choose a Fixed Number')">FIXED</button>
+            <button onclick="showModal3('Range', 'Choose a Range')">RANGE</button>
+        `;
+    } 
+    
+    
+    else if (type === 'number1') {
+        modalContent.innerHTML = `
+            <button onclick="setModalInput('Default')">DEFAULT</button>
+            <button onclick="showModal4('Fixed', 'Choose a Fixed Number')">FIXED</button>
+            <button onclick="showModal4('Range', 'Choose a Range')">RANGE</button>
+        `;
+    }else if (type === 'overUnder') {
+        const overUnderType = currentButtonId === 'overButton' ? 'Over' : 'Under';
+        modalContent.innerHTML = `
+            <div>
+                <label for="overUnderValue">Select a number: </label>
+                <input type="text" id="overUnderValue" readonly value="${overUnderValues[currentButtonId] || ''}">
+            </div>
+            <div class="checkbox-group">
+                ${[...Array(overUnderType === 'Over' ? 9 : 9).keys()].map(i => `
+                    <label><input type="checkbox" value="${i + (overUnderType === 'Over' ? 0 : 1)}" onclick="setOverUnderValue('${overUnderType}', ${i + (overUnderType === 'Over' ? 0 : 1)})" ${overUnderValues[currentButtonId] === `${overUnderType}: ${i + (overUnderType === 'Over' ? 0 : 1)}` ? 'checked' : ''}>${i + (overUnderType === 'Over' ? 0 : 1)}</label>
+                `).join('')}
+            </div>
+            <button onclick="setModalInput('Default')">DEFAULT</button>
+            <button onclick="showModal4('Fixed', 'Choose a Fixed Number')">FIXED</button>
+            <button onclick="showModal4('Range', 'Choose a Range')">RANGE</button>
+        `;
+    }
+
+    modal.style.display = 'block';
+    clearErrors(); // Clear errors when opening modal
+}
+
+
+
+    window.setModalInput = function (value) {
+        modalInput.value = value;
+        if (value.trim() !== '') {
+            modalError.textContent = ''; // Clear error message if input is not empty
+        }
+    }
+
+    window.showModal2 = function (type, heading) {
+    modal2Heading.textContent = heading;
+    modal2Content.innerHTML = '';
+    modal2Error.textContent = ''; // Clear error message
+    const modal1Value = modalInput.value;
+    const fixedNumberMatch = modal1Value.match(/Fixed : (\d+)/);
+    const rangeMatch = modal1Value.match(/Range: (\d+) - (\d+)/);
+    const fixedNumber = fixedNumberMatch ? fixedNumberMatch[1] : '';
+    const rangeFrom = rangeMatch ? rangeMatch[1] : '';
+    const rangeTo = rangeMatch ? rangeMatch[2] : '';
+
+    if (type === 'Fixed') {
+        modal2Content.innerHTML = `
+            <label for="fixedNumber">Choose a number:</label>
+            <input type="number" id="fixedNumber" min="0" max="9" value="${fixedNumber}" oninput="updateModal2Input(this.value)">
+            <div id="modal2Error" style="color: red;"></div> <!-- Add this line -->
+        `;
+        modal2Input.value = modal1Value.includes('Fixed') ? modal1Value : '';
+    } else if (type === 'Range') {
+        modal2Content.innerHTML = `
+            <label for="rangeFrom">From:</label>
+            <input type="number" id="rangeFrom" min="0" max="9" value="${rangeFrom}" oninput="updateModal2InputRange()">
+            <label for="rangeTo">To:</label>
+            <input type="number" id="rangeTo" min="0" max="9" value="${rangeTo}" oninput="updateModal2InputRange()">
+            <div id="modal2Error" style="color: red;"></div>
+        `;
+        modal2Input.value = modal1Value.includes('Range') ? modal1Value : '';
+    }
+
+    modal2.style.display = 'block';
+    modal.style.display = 'none';
+    clearErrors(); // Clear errors when opening modal
+}
+
+
+
+window.showModal3 = function (type, heading) {
+    modal2Heading.textContent = heading;
+    modal2Content.innerHTML = '';
+    modal2Error.textContent = ''; // Clear error message
+    const modal1Value = modalInput.value;
+    const fixedNumberMatch = modal1Value.match(/Fixed : (\d+)/);
+    const rangeMatch = modal1Value.match(/Range: (\d+) - (\d+)/);
+    const fixedNumber = fixedNumberMatch ? fixedNumberMatch[1] : '';
+    const rangeFrom = rangeMatch ? rangeMatch[1] : '';
+    const rangeTo = rangeMatch ? rangeMatch[2] : '';
+
+    if (type === 'Fixed') {
+        modal2Content.innerHTML = `
+            <label for="fixedNumber">Choose a number:</label>
+            <input type="number" id="fixedNumber" min="0" max="15" value="${fixedNumber}" oninput="updateModal2Input2(this.value)">
+            <div id="modal2Error" style="color: red;"></div> <!-- Add this line -->
+        `;
+        modal2Input.value = modal1Value.includes('Fixed') ? modal1Value : '';
+    } else if (type === 'Range') {
+        modal2Content.innerHTML = `
+            <label for="rangeFrom">From:</label>
+            <input type="number" id="rangeFrom" min="0" max="15" value="${rangeFrom}" oninput="updateModal2InputRange2()">
+            <label for="rangeTo">To:</label>
+            <input type="number" id="rangeTo" min="0" max="15" value="${rangeTo}" oninput="updateModal2InputRange2()">
+            <div id="modal2Error" style="color: red;"></div>
+        `;
+        modal2Input.value = modal1Value.includes('Range') ? modal1Value : '';
+    }
+
+    modal2.style.display = 'block';
+    modal.style.display = 'none';
+    clearErrors(); // Clear errors when opening modal
+}
+
+window.showModal4 = function (type, heading) {
+    modal2Heading.textContent = heading;
+    modal2Content.innerHTML = '';
+    modal2Error.textContent = ''; // Clear error message
+    const modal1Value = modalInput.value;
+    const fixedNumberMatch = modal1Value.match(/Fixed : (\d+)/);
+    const rangeMatch = modal1Value.match(/Range: (\d+) - (\d+)/);
+    const fixedNumber = fixedNumberMatch ? fixedNumberMatch[1] : '';
+    const rangeFrom = rangeMatch ? rangeMatch[1] : '';
+    const rangeTo = rangeMatch ? rangeMatch[2] : '';
+
+    if (type === 'Fixed') {
+        modal2Content.innerHTML = `
+            <label for="fixedNumber">Choose a number:</label>
+            <input type="number" id="fixedNumber" min="0" max="100" value="${fixedNumber}" oninput="updateModal2Input3(this.value)">
+            <div id="modal2Error" style="color: red;"></div> 
+        `;
+        modal2Input.value = modal1Value.includes('Fixed') ? modal1Value : '';
+    } else if (type === 'Range') {
+        modal2Content.innerHTML = `
+            <label for="rangeFrom">From:</label>
+            <input type="number" id="rangeFrom" min="0" max="100" value="${rangeFrom}" oninput="updateModal2InputRange3()">
+            <label for="rangeTo">To:</label>
+            <input type="number" id="rangeTo" min="0" max="100" value="${rangeTo}" oninput="updateModal2InputRange3()">
+            <div id="modal2Error" style="color: red;"></div>
+        `;
+        modal2Input.value = modal1Value.includes('Range') ? modal1Value : '';
+    }
+
+    modal2.style.display = 'block';
+    modal.style.display = 'none';
+    clearErrors(); // Clear errors when opening modal
+}
+
+window.updateModal2Input = function (value) {
+    const errorMessage = 'Number must be between 0 and 9, and cannot start with 0 or have more than one decimal point';
+
+    // Check if the value is empty
+    if (value === '') {
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the value is a valid number within the specified range
+    if (isNaN(value) || value < 0 || value > 9) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the number starts with 0 or has more than one decimal point
+    if (value[0] === '0' && value.length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    const decimalIndex = value.indexOf('.');
+    if (decimalIndex !== -1 && value.substring(decimalIndex + 1).length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // If all checks pass, clear error message and set the input value
+    modal2Error.textContent = ''; // Clear error message
+    modal2Input.value = `Fixed : ${value}`;
+};
+
+window.updateModal2Input2 = function (value) {
+    const errorMessage = 'Number must be between 0 and 15, and cannot start with 0 or have more than one decimal point';
+
+    // Check if the value is empty
+    if (value === '') {
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the value is a valid number within the specified range
+    if (isNaN(value) || value < 0 || value > 15) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the number starts with 0 or has more than one decimal point
+    if (value[0] === '0' && value.length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    const decimalIndex = value.indexOf('.');
+    if (decimalIndex !== -1 && value.substring(decimalIndex + 1).length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // If all checks pass, clear error message and set the input value
+    modal2Error.textContent = ''; // Clear error message
+    modal2Input.value = `Fixed : ${value}`;
+};
+
+window.updateModal2Input3 = function (value) {
+    const errorMessage = 'Number must be between 0 and 100, and cannot start with 0 or have more than one decimal point';
+
+    // Check if the value is empty
+    if (value === '') {
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the value is a valid number within the specified range
+    if (isNaN(value) || value < 0 || value > 100) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // Check if the number starts with 0 or has more than one decimal point
+    if (value[0] === '0' && value.length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    const decimalIndex = value.indexOf('.');
+    if (decimalIndex !== -1 && value.substring(decimalIndex + 1).length > 1) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+        return;
+    }
+
+    // If all checks pass, clear error message and set the input value
+    modal2Error.textContent = ''; // Clear error message
+    modal2Input.value = `Fixed : ${value}`;
+};
+
+
+
+
+
+window.updateModal2InputRange = function () {
+    const fromValue = document.getElementById('rangeFrom').value;
+    const toValue = document.getElementById('rangeTo').value;
+    const errorMessage = 'Range values must be between 0 and 9 ';
+
+    // Check if the values are within the valid range and "from" is less than or equal to "to"
+    if (fromValue < 0 || fromValue > 9 || toValue < 0 || toValue > 9 || parseInt(fromValue) > parseInt(toValue)) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+    } else {
+        modal2Error.textContent = ''; // Clear error message
+        modal2Input.value = `Range: ${fromValue} - ${toValue}`;
+    }
+}
+
+window.updateModal2InputRange2 = function () {
+    const fromValue = document.getElementById('rangeFrom').value;
+    const toValue = document.getElementById('rangeTo').value;
+    const errorMessage = 'Range values must be between 0 and 15';
+
+    // Check if the values are within the valid range and "from" is less than or equal to "to"
+    if (fromValue < 0 || fromValue > 15 || toValue < 0 || toValue > 15 || parseInt(fromValue) > parseInt(toValue)) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+    } else {
+        modal2Error.textContent = ''; // Clear error message
+        modal2Input.value = `Range: ${fromValue} - ${toValue}`;
+    }
+}
+
+window.updateModal2InputRange3 = function () {
+    const fromValue = document.getElementById('rangeFrom').value;
+    const toValue = document.getElementById('rangeTo').value;
+    const errorMessage = 'Range values must be between 0 and 100';
+
+    // Check if the values are within the valid range and "from" is less than or equal to "to"
+    if (fromValue < 0 || fromValue > 100 || toValue < 0 || toValue > 100 || parseInt(fromValue) > parseInt(toValue)) {
+        modal2Error.textContent = errorMessage; // Display error message
+        modal2Input.value = ''; // Clear modal2Input value
+    } else {
+        modal2Error.textContent = ''; // Clear error message
+        modal2Input.value = `Range: ${fromValue} - ${toValue}`;
+    }
+}
+
+
+    modalInput.addEventListener('input', function () {
+        if (this.value.trim() !== '') {
+            modalError.textContent = ''; // Clear error message if input is not empty
+        }
+    });
+
+    modal2Input.addEventListener('input', function () {
+        if (this.value.trim() !== '') {
+            modal2Error.textContent = ''; // Clear error message if input is not empty
+        }
+    });
+
+    function clearErrors() {
+        modalError.textContent = ''; // Clear modal 1 error message
+        modal2Error.textContent = ''; // Clear modal 2 error message
+    }
+
+    
+
+  window.setOverUnderValue = function (type, value) {
+    const overUnderInput = document.getElementById('overUnderValue');
+    const checkbox = document.querySelector(`input[type="checkbox"][value="${value}"]`);
+    let currentValues = overUnderInput.value.split(', ').filter(Boolean);
+
+    if (checkbox.checked) {
+        // If the checkbox is now checked, add the value
+        currentValues.push(`${type}: ${value}`);
+    } else {
+        // If the checkbox is now unchecked, remove the value
+        currentValues = currentValues.filter(v => v !== `${type}: ${value}`);
+    }
+
+    overUnderInput.value = currentValues.join(', ');
+    overUnderValues[currentButtonId] = overUnderInput.value; // Store the value
+};
+
+
+});
+
+
+    </script>
+</body>
+
+</html>
