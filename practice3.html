@@ -41,7 +41,6 @@
 .table-container {
     overflow-x: auto;
     width: 100%;
-    margin-left: -7px;
 }
 
 .summary-table {
@@ -71,7 +70,6 @@
     margin-top: 2px;
     width: 250px; /* Adjust width as needed */
     margin-left: -10px;
-   
     
 }
 
@@ -124,9 +122,6 @@
 /* Highlight for minimum percentage */
 .circle.min-percentage {
     border-bottom: 5px solid #ec3f3f;
-   
-   
-    
     
 }
 
@@ -209,7 +204,7 @@
 }
 
 .lastcolumn {
-    width: 100%;  /* Adjust the width as needed */
+    width: 50%;  /* Adjust the width as needed */
 }
 
         .summary {
@@ -1590,7 +1585,6 @@ function updateCirclePercentages(symbol, percentages, lastDigit) {
         }
     });
 }
-
 const ticksResponse = async (res) => {
     const data = JSON.parse(res.data);
     if (data.msg_type === 'history') {
